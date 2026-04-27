@@ -21,25 +21,28 @@ function Index() {
 
   return (
     <div>
-      {/* HERO */}
-      <section className="relative h-[88vh] min-h-[640px] w-full overflow-hidden">
-        <img
-          src="https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=2000&q=80"
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/30" />
-        <div className="container-rhode relative h-full flex flex-col justify-end pb-20">
-          <div className="fade-up max-w-2xl">
-            <h1 className="font-display text-5xl md:text-7xl leading-[1.05] text-background mix-blend-difference">
+      {/* HERO — изображение в рамке как на референсе */}
+      <section className="px-3 md:px-4 pt-3 md:pt-4">
+        <div className="relative w-full h-[70vh] min-h-[520px] md:h-[82vh] md:min-h-[640px] overflow-hidden rounded-sm">
+          <img
+            src="https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=2200&q=80"
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-foreground/30 via-transparent to-transparent" />
+          <div className="absolute left-6 md:left-12 bottom-10 md:bottom-14 max-w-xl text-background fade-up">
+            <div className="text-[11px] uppercase tracking-[0.3em] mb-4 opacity-90">
+              Новая коллекция
+            </div>
+            <h1 className="font-display text-4xl md:text-6xl leading-[1.05]">
               {t("hero.title")}
             </h1>
-            <p className="mt-6 text-base md:text-lg text-background/90 mix-blend-difference max-w-lg">
+            <p className="mt-5 text-sm md:text-base opacity-90 max-w-md">
               {t("hero.subtitle")}
             </p>
             <Link
               to="/shop"
-              className="inline-block mt-10 bg-background text-foreground px-10 py-4 text-xs uppercase tracking-[0.2em] hover:bg-foreground hover:text-background transition-colors"
+              className="inline-block mt-8 border border-background/80 text-background px-8 py-3 text-[11px] uppercase tracking-[0.25em] rounded-full hover:bg-background hover:text-foreground transition-colors"
             >
               {t("hero.cta")}
             </Link>
