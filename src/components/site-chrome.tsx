@@ -87,55 +87,102 @@ export function SiteHeader() {
       {/* mobile drawer */}
       <div
         onClick={() => setOpen(false)}
-        className={`fixed inset-0 z-50 bg-foreground/40 transition-opacity duration-300 md:hidden ${open ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        className={`fixed inset-0 z-[60] md:hidden transition-opacity duration-300 ${open ? "opacity-100" : "opacity-0 pointer-events-none"}`}
       >
+        <div className="absolute inset-0 bg-foreground/50 backdrop-blur-sm" />
         <aside
           onClick={(e) => e.stopPropagation()}
-          className={`absolute right-0 top-0 h-full w-[88%] max-w-md bg-background shadow-2xl transition-transform duration-300 ${open ? "translate-x-0" : "translate-x-full"} flex flex-col`}
+          className={`absolute right-0 top-0 h-full w-[86%] max-w-sm bg-background shadow-2xl transition-transform duration-300 ease-out ${open ? "translate-x-0" : "translate-x-full"} flex flex-col`}
         >
-          <div className="flex items-center justify-between px-6 h-20 border-b border-border">
-            <span className="font-display text-2xl">ОБЛАКО</span>
+          {/* header */}
+          <div className="flex items-center justify-between px-6 h-16 border-b border-border">
+            <span className="font-display text-xl tracking-tight">ОБЛАКО</span>
             <button
               onClick={() => setOpen(false)}
               aria-label="Закрыть"
-              className="w-10 h-10 flex items-center justify-center text-3xl leading-none text-foreground hover:opacity-60"
+              className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-secondary transition-colors"
             >
-              ×
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M2 2L14 14M14 2L2 14" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+              </svg>
             </button>
           </div>
 
-          <nav className="flex-1 overflow-y-auto px-6 py-4">
-            <ul className="divide-y divide-border">
+          {/* user pill */}
+          <div className="px-6 pt-5 pb-4 border-b border-border">
+            {user ? (
+              <Link
+                to="/account"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-3 group"
+              >
+                <span className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center font-display text-base">
+                  {user.name.charAt(0)}
+                </span>
+                <span className="flex flex-col">
+                  <span className="text-sm font-medium">{user.name}</span>
+                  <span className="text-xs text-muted-foreground">{user.email}</span>
+                </span>
+              </Link>
+            ) : (
+              <Link
+                to="/account"
+                onClick={() => setOpen(false)}
+                className="flex items-center justify-between px-4 py-3 rounded-full bg-foreground text-background text-sm uppercase tracking-widest"
+              >
+                <span>{t("auth.login")}</span>
+                <span>→</span>
+              </Link>
+            )}
+          </div>
+
+          {/* main nav */}
+          <nav className="flex-1 overflow-y-auto px-2 py-4">
+            <ul className="flex flex-col">
               {NAV_LINKS.map((l) => (
                 <li key={l.to}>
                   <Link
                     to={l.to}
                     onClick={() => setOpen(false)}
-                    className="flex items-center justify-between py-5 font-display text-2xl text-foreground"
+                    className="flex items-center justify-between px-4 py-4 rounded-lg text-foreground hover:bg-secondary transition-colors"
                   >
-                    <span>{t(l.key)}</span>
-                    <span className="text-muted-foreground text-base">→</span>
+                    <span className="font-display text-xl">{t(l.key)}</span>
+                    <span className="text-muted-foreground text-sm">→</span>
                   </Link>
                 </li>
               ))}
+
+              <li className="mt-2 mb-1 px-4 text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+                Кабинет
+              </li>
               <li>
                 <Link
                   to="/cart"
                   onClick={() => setOpen(false)}
-                  className="flex items-center justify-between py-5 font-display text-2xl text-foreground"
+                  className="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-secondary transition-colors"
                 >
-                  <span>{t("nav.cart")}</span>
-                  <span className="text-muted-foreground text-base tabular-nums">{count}</span>
+                  <span className="text-base">{t("nav.cart")}</span>
+                  <span className="text-xs text-muted-foreground tabular-nums">{count}</span>
                 </Link>
               </li>
               <li>
                 <Link
                   to="/account"
                   onClick={() => setOpen(false)}
-                  className="flex items-center justify-between py-5 font-display text-2xl text-foreground"
+                  className="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-secondary transition-colors"
                 >
-                  <span>{user ? user.name : t("nav.account")}</span>
-                  <span className="text-muted-foreground text-base">→</span>
+                  <span className="text-base">{t("nav.account")}</span>
+                  <span className="text-muted-foreground text-sm">→</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/privacy"
+                  onClick={() => setOpen(false)}
+                  className="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-secondary transition-colors"
+                >
+                  <span className="text-base">Политика конфиденциальности</span>
+                  <span className="text-muted-foreground text-sm">→</span>
                 </Link>
               </li>
               {user?.role === "admin" && (
@@ -143,38 +190,33 @@ export function SiteHeader() {
                   <Link
                     to="/admin"
                     onClick={() => setOpen(false)}
-                    className="flex items-center justify-between py-5 font-display text-2xl text-foreground"
+                    className="flex items-center justify-between px-4 py-3 rounded-lg bg-secondary/60 hover:bg-secondary transition-colors"
                   >
-                    <span>{t("nav.admin")}</span>
-                    <span className="text-muted-foreground text-base">→</span>
+                    <span className="text-base font-medium">{t("nav.admin")}</span>
+                    <span className="text-muted-foreground text-sm">→</span>
                   </Link>
                 </li>
               )}
             </ul>
           </nav>
 
-          <div className="px-6 py-6 border-t border-border flex items-center justify-between bg-secondary/50">
+          {/* footer actions */}
+          <div className="px-6 py-5 border-t border-border flex items-center justify-between gap-4">
             <button
               onClick={() => setLang(lang === "ru" ? "en" : "ru")}
-              className="text-sm uppercase tracking-widest font-medium"
+              className="flex items-center gap-2 text-xs uppercase tracking-widest"
             >
-              {lang === "ru" ? "English" : "Русский"}
+              <span className={lang === "ru" ? "font-semibold" : "text-muted-foreground"}>RU</span>
+              <span className="text-muted-foreground">/</span>
+              <span className={lang === "en" ? "font-semibold" : "text-muted-foreground"}>EN</span>
             </button>
-            {user ? (
+            {user && (
               <button
                 onClick={async () => { await api.logout(); setOpen(false); router.invalidate(); }}
-                className="text-sm uppercase tracking-widest text-muted-foreground hover:text-foreground"
+                className="text-xs uppercase tracking-widest text-muted-foreground hover:text-foreground"
               >
                 {t("auth.logout")}
               </button>
-            ) : (
-              <Link
-                to="/account"
-                onClick={() => setOpen(false)}
-                className="text-sm uppercase tracking-widest font-medium"
-              >
-                {t("auth.login")}
-              </Link>
             )}
           </div>
         </aside>
