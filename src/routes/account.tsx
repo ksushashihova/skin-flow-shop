@@ -8,11 +8,34 @@ export const Route = createFileRoute("/account")({
   component: AccountPage,
 });
 
+const STATUS_LABEL: Record<Order["status"], string> = {
+  new: "Новый",
+  paid: "Оплачен",
+  shipped: "В пути",
+  completed: "Получен",
+  cancelled: "Отменён",
+};
+
+const PAYMENT_LABEL: Record<Order["paymentMethod"], string> = {
+  card_online: "Картой онлайн",
+  sbp: "СБП",
+  card_on_delivery: "Картой при получении",
+  cash: "Наличными при получении",
+};
+
+const DELIVERY_LABEL: Record<Order["deliveryMethod"], string> = {
+  pickup: "Самовывоз",
+  courier: "Курьер",
+  cdek: "СДЭК",
+  post: "Почта России",
+};
+
 function AccountPage() {
   const { t, lang } = useI18n();
   const [user, setUser] = useState<User | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [openId, setOpenId] = useState<string | null>(null);
 
   const refresh = async () => {
     const u = await api.me();
@@ -25,11 +48,22 @@ function AccountPage() {
   if (loading) return <div className="container-rhode py-32 text-center text-muted-foreground">{t("common.loading")}</div>;
   if (!user) return <AuthForms onAuth={refresh} />;
 
+  const cancel = async (id: string) => {
+    if (!confirm("Отменить этот заказ?")) return;
+    try {
+      await api.cancelOrder(id);
+      await refresh();
+    } catch (e) {
+      alert((e as Error).message);
+    }
+  };
+
   return (
     <div className="container-rhode py-16 grid md:grid-cols-[260px_1fr] gap-16">
       <aside>
         <div className="font-display text-3xl mb-2">{user.name}</div>
         <div className="text-sm text-muted-foreground">{user.email}</div>
+        {user.phone && <div className="text-sm text-muted-foreground">{user.phone}</div>}
         <button
           onClick={async () => { await api.logout(); refresh(); }}
           className="mt-8 text-xs uppercase tracking-widest hover-underline"
@@ -44,22 +78,63 @@ function AccountPage() {
         {orders.length === 0 ? (
           <p className="text-muted-foreground text-sm">Заказов пока нет.</p>
         ) : (
-          <ul className="divide-y divide-border">
-            {orders.map((o) => (
-              <li key={o.id} className="py-5 flex justify-between items-start gap-4">
-                <div>
-                  <div className="font-medium">№ {o.id}</div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {new Date(o.createdAt).toLocaleDateString("ru-RU")} ·{" "}
-                    {o.items.map((i) => `${i.name} × ${i.quantity}`).join(", ")}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="tabular-nums">{formatPrice(o.totalPrice, lang)}</div>
-                  <div className="text-xs uppercase tracking-widest text-muted-foreground mt-1">{o.status}</div>
-                </div>
-              </li>
-            ))}
+          <ul className="divide-y divide-border border-y border-border">
+            {orders.map((o) => {
+              const isOpen = openId === o.id;
+              const cancellable = o.status !== "shipped" && o.status !== "completed" && o.status !== "cancelled";
+              return (
+                <li key={o.id} className="py-5">
+                  <button
+                    onClick={() => setOpenId(isOpen ? null : o.id)}
+                    className="w-full flex justify-between items-start gap-4 text-left"
+                  >
+                    <div>
+                      <div className="font-medium">№ {o.id}</div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {new Date(o.createdAt).toLocaleDateString("ru-RU")} · {o.items.length} поз. · {DELIVERY_LABEL[o.deliveryMethod]}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="tabular-nums">{formatPrice(o.totalPrice, lang)}</div>
+                      <div className="text-xs uppercase tracking-widest text-muted-foreground mt-1">
+                        {STATUS_LABEL[o.status]}
+                      </div>
+                    </div>
+                  </button>
+                  {isOpen && (
+                    <div className="mt-6 bg-secondary p-6 space-y-6">
+                      <ul className="space-y-4">
+                        {o.items.map((it) => (
+                          <li key={it.productId} className="flex gap-4">
+                            {it.image && <img src={it.image} alt="" className="w-16 h-20 object-cover" />}
+                            <div className="flex-1 flex justify-between text-sm">
+                              <div>
+                                <div>{it.name}</div>
+                                <div className="text-xs text-muted-foreground mt-1">× {it.quantity}</div>
+                              </div>
+                              <div className="tabular-nums">{formatPrice(it.price * it.quantity, lang)}</div>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                      <div className="text-xs text-muted-foreground space-y-1 border-t border-border pt-4">
+                        <div>Доставка: {DELIVERY_LABEL[o.deliveryMethod]} {o.deliveryPrice ? `· ${formatPrice(o.deliveryPrice, lang)}` : "· бесплатно"}</div>
+                        <div>Оплата: {PAYMENT_LABEL[o.paymentMethod]}</div>
+                        <div>Адрес: {o.address.city}, {o.address.addressLine}, {o.address.postalCode}</div>
+                      </div>
+                      {cancellable && (
+                        <button
+                          onClick={() => cancel(o.id)}
+                          className="text-xs uppercase tracking-widest text-destructive hover-underline"
+                        >
+                          Отменить заказ
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>
@@ -99,6 +174,7 @@ function AuthForms({ onAuth }: { onAuth: () => void }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [err, setErr] = useState<string | null>(null);
 
   const submit = async (e: React.FormEvent) => {
@@ -106,7 +182,7 @@ function AuthForms({ onAuth }: { onAuth: () => void }) {
     setErr(null);
     try {
       if (mode === "login") await api.login(email, password);
-      else await api.register(email, password, name);
+      else await api.register(email, password, name, phone);
       onAuth();
     } catch (e) { setErr((e as Error).message); }
   };
@@ -121,8 +197,12 @@ function AuthForms({ onAuth }: { onAuth: () => void }) {
       </p>
       <form onSubmit={submit} className="space-y-4">
         {mode === "register" && (
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("auth.name")} required
-            className="w-full border-b border-border bg-transparent py-2 outline-none focus:border-foreground" />
+          <>
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("auth.name")} required
+              className="w-full border-b border-border bg-transparent py-2 outline-none focus:border-foreground" />
+            <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Телефон"
+              className="w-full border-b border-border bg-transparent py-2 outline-none focus:border-foreground" />
+          </>
         )}
         <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("auth.email")} required
           className="w-full border-b border-border bg-transparent py-2 outline-none focus:border-foreground" />
