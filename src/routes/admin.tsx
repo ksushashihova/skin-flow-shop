@@ -387,7 +387,11 @@ function ProductsPanel() {
   const [creating, setCreating] = useState(false);
 
   const refresh = async () => setProducts(await api.listProducts());
-  useEffect(() => { refresh(); }, []);
+  useEffect(() => {
+    refresh();
+    const i = setInterval(refresh, 2000);
+    return () => clearInterval(i);
+  }, []);
 
   if (creating) {
     return (
