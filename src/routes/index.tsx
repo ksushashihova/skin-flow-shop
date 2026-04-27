@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { api, type Product } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { ProductCard } from "@/components/product-card";
+import { HomeHeader } from "@/components/site-chrome";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -21,15 +22,21 @@ function Index() {
 
   return (
     <div>
-      {/* HERO — изображение в рамке как на референсе */}
+      {/* Узкая верхняя полоса с центрированным логотипом */}
+      <HomeHeader />
+
+      {/* HERO — картинка с отступами по краям, нав поверх неё */}
       <section className="px-3 md:px-4 pt-3 md:pt-4">
-        <div className="relative w-full h-[70vh] min-h-[520px] md:h-[82vh] md:min-h-[640px] overflow-hidden rounded-sm">
+        <div className="relative w-full h-[78vh] min-h-[560px] md:h-[86vh] md:min-h-[680px] overflow-hidden rounded-sm bg-muted">
           <img
             src="https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=2200&q=80"
             alt=""
             className="absolute inset-0 w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-foreground/30 via-transparent to-transparent" />
+          {/* лёгкое затемнение сверху, чтобы навигация читалась */}
+          <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-foreground/35 to-transparent pointer-events-none" />
+          <div className="absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-foreground/30 to-transparent pointer-events-none" />
+
           <div className="absolute left-6 md:left-12 bottom-10 md:bottom-14 max-w-xl text-background fade-up">
             <div className="text-[11px] uppercase tracking-[0.3em] mb-4 opacity-90">
               Новая коллекция
