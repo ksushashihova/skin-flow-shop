@@ -22,6 +22,16 @@
 //   GET    /api/admin/orders                                             -> Order[]
 //   PATCH  /api/admin/orders/:id    { status }                           -> Order
 //   GET    /api/admin/users                                              -> User[]
+//
+//   POST   /api/admin/products      Product                              -> Product
+//   PUT    /api/admin/products/:id  Partial<Product>                     -> Product
+//   DELETE /api/admin/products/:id                                       -> { ok: true }
+//
+//   GET    /api/posts                                                    -> Post[]
+//   GET    /api/posts/:slug                                              -> Post
+//   POST   /api/admin/posts         Post                                 -> Post
+//   PUT    /api/admin/posts/:slug   Partial<Post>                        -> Post
+//   DELETE /api/admin/posts/:slug                                        -> { ok: true }
 
 export type Role = "guest" | "user" | "admin";
 export type OrderStatus = "new" | "paid" | "shipped" | "completed" | "cancelled";
@@ -89,12 +99,25 @@ export interface Address {
   postalCode: string;
 }
 
-import { PRODUCTS } from "./products";
+export interface Post {
+  slug: string;
+  title: string;
+  excerpt: string;
+  cover: string;
+  category: string;
+  date: string;
+  body: string[];
+}
 
-const LS_KEY = "demo_state_v2";
+import { PRODUCTS as SEED_PRODUCTS } from "./products";
+import { POSTS as SEED_POSTS } from "./posts";
+
+const LS_KEY = "demo_state_v3";
 
 interface DemoState {
   users: (User & { passwordHash: string })[];
+  products: Product[];
+  posts: Post[];
   cart: CartItem[];
   orders: Order[];
   addresses: Address[];
@@ -103,14 +126,26 @@ interface DemoState {
 
 function load(): DemoState {
   if (typeof window === "undefined") {
-    return { users: seedUsers(), cart: [], orders: [], addresses: [], sessionUserId: null };
+    return {
+      users: seedUsers(),
+      products: [...SEED_PRODUCTS],
+      posts: [...SEED_POSTS],
+      cart: [], orders: [], addresses: [], sessionUserId: null,
+    };
   }
   const raw = localStorage.getItem(LS_KEY);
   if (raw) {
-    try { return JSON.parse(raw) as DemoState; } catch { /* ignore */ }
+    try {
+      const parsed = JSON.parse(raw) as DemoState;
+      if (!parsed.products) parsed.products = [...SEED_PRODUCTS];
+      if (!parsed.posts) parsed.posts = [...SEED_POSTS];
+      return parsed;
+    } catch { /* ignore */ }
   }
   const initial: DemoState = {
     users: seedUsers(),
+    products: [...SEED_PRODUCTS],
+    posts: [...SEED_POSTS],
     cart: [],
     orders: seedOrders(),
     addresses: [],
@@ -145,6 +180,7 @@ function seedUsers(): (User & { passwordHash: string })[] {
   ];
 }
 function seedOrders(): Order[] {
+  const p = SEED_PRODUCTS[0];
   return [
     {
       id: "o_1001",
@@ -153,7 +189,7 @@ function seedOrders(): Order[] {
       status: "shipped",
       totalPrice: 4980,
       items: [
-        { productId: PRODUCTS[0].id, name: PRODUCTS[0].name_ru, quantity: 2, price: PRODUCTS[0].price, image: PRODUCTS[0].images[0] },
+        { productId: p.id, name: p.name_ru, quantity: 2, price: p.price, image: p.images[0] },
       ],
       address: { city: "Москва", addressLine: "ул. Тверская, 12", postalCode: "125009" },
       paymentMethod: "card_online",
@@ -165,12 +201,28 @@ function seedOrders(): Order[] {
   ];
 }
 
-const delay = (ms = 250) => new Promise((r) => setTimeout(r, ms));
+const delay = (ms = 200) => new Promise((r) => setTimeout(r, ms));
 
 function strip(u: User & { passwordHash: string }): User {
   const { passwordHash: _ph, ...rest } = u;
   void _ph;
   return rest;
+}
+
+function slugify(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[а-яё]/g, (c) => {
+      const map: Record<string, string> = {
+        а:"a",б:"b",в:"v",г:"g",д:"d",е:"e",ё:"e",ж:"zh",з:"z",и:"i",й:"y",
+        к:"k",л:"l",м:"m",н:"n",о:"o",п:"p",р:"r",с:"s",т:"t",у:"u",ф:"f",
+        х:"h",ц:"ts",ч:"ch",ш:"sh",щ:"sch",ъ:"",ы:"y",ь:"",э:"e",ю:"yu",я:"ya",
+      };
+      return map[c] ?? c;
+    })
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 64) || ("id-" + Math.random().toString(36).slice(2, 8));
 }
 
 export const DELIVERY_PRICES: Record<DeliveryMethod, number> = {
@@ -229,16 +281,18 @@ export const api = {
   },
 
   async listProducts(query = ""): Promise<Product[]> {
-    await delay(150);
+    await delay(120);
+    const s = load();
     const q = query.trim().toLowerCase();
-    if (!q) return PRODUCTS;
-    return PRODUCTS.filter((p) =>
+    if (!q) return s.products;
+    return s.products.filter((p) =>
       [p.name_ru, p.name_en, p.tagline_ru, p.tagline_en].some((t) => t.toLowerCase().includes(q))
     );
   },
   async getProduct(id: string): Promise<Product | null> {
-    await delay(120);
-    return PRODUCTS.find((p) => p.id === id || p.slug === id) ?? null;
+    await delay(100);
+    const s = load();
+    return s.products.find((p) => p.id === id || p.slug === id) ?? null;
   },
 
   async getCart(): Promise<CartItem[]> {
@@ -275,14 +329,14 @@ export const api = {
     deliveryMethod: DeliveryMethod,
     consent: boolean,
   ): Promise<Order> {
-    await delay(400);
+    await delay(350);
     if (!consent) throw new Error("Необходимо согласие на обработку персональных данных");
     const s = load();
     if (!s.sessionUserId) throw new Error("Войдите, чтобы оформить заказ");
     if (s.cart.length === 0) throw new Error("Корзина пуста");
     const user = s.users.find((u) => u.id === s.sessionUserId)!;
     const items: OrderItem[] = s.cart.map((c) => {
-      const p = PRODUCTS.find((p) => p.id === c.productId)!;
+      const p = s.products.find((p) => p.id === c.productId)!;
       return { productId: p.id, name: p.name_ru, quantity: c.quantity, price: p.price, image: p.images[0] };
     });
     const deliveryPrice = DELIVERY_PRICES[deliveryMethod];
@@ -346,5 +400,64 @@ export const api = {
   },
   async adminGetUserOrders(userId: string): Promise<Order[]> {
     return load().orders.filter((o) => o.userId === userId);
+  },
+
+  // -------- products CRUD --------
+  async adminCreateProduct(input: Omit<Product, "id" | "slug"> & { slug?: string }): Promise<Product> {
+    const s = load();
+    const slug = input.slug?.trim() || slugify(input.name_ru || input.name_en);
+    const product: Product = {
+      ...input,
+      id: "p_" + Math.random().toString(36).slice(2, 8),
+      slug,
+    };
+    s.products.unshift(product);
+    save(s);
+    return product;
+  },
+  async adminUpdateProduct(id: string, patch: Partial<Product>): Promise<Product> {
+    const s = load();
+    const p = s.products.find((x) => x.id === id);
+    if (!p) throw new Error("Товар не найден");
+    Object.assign(p, patch);
+    save(s);
+    return p;
+  },
+  async adminDeleteProduct(id: string): Promise<{ ok: true }> {
+    const s = load();
+    s.products = s.products.filter((p) => p.id !== id);
+    save(s);
+    return { ok: true };
+  },
+
+  // -------- posts CRUD --------
+  async listPosts(): Promise<Post[]> {
+    return load().posts;
+  },
+  async getPost(slug: string): Promise<Post | null> {
+    return load().posts.find((p) => p.slug === slug) ?? null;
+  },
+  async adminCreatePost(input: Omit<Post, "slug"> & { slug?: string }): Promise<Post> {
+    const s = load();
+    const slug = input.slug?.trim() || slugify(input.title);
+    if (s.posts.find((p) => p.slug === slug)) throw new Error("Статья с таким slug уже существует");
+    const post: Post = { ...input, slug };
+    s.posts.unshift(post);
+    save(s);
+    return post;
+  },
+  async adminUpdatePost(slug: string, patch: Partial<Post>): Promise<Post> {
+    const s = load();
+    const p = s.posts.find((x) => x.slug === slug);
+    if (!p) throw new Error("Статья не найдена");
+    Object.assign(p, patch);
+    save(s);
+    return p;
+  },
+  async adminDeletePost(slug: string): Promise<{ ok: true }> {
+    const s = load();
+    s.posts = s.posts.filter((p) => p.slug !== slug);
+    save(s);
+    return { ok: true };
   },
 };

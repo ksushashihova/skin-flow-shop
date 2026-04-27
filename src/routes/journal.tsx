@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { POSTS } from "@/lib/posts";
+import { useEffect, useState } from "react";
+import { api, type Post } from "@/lib/api";
 
 export const Route = createFileRoute("/journal")({
   head: () => ({
@@ -12,15 +13,23 @@ export const Route = createFileRoute("/journal")({
 });
 
 function Journal() {
+  const [posts, setPosts] = useState<Post[]>([]);
+  useEffect(() => {
+    api.listPosts().then(setPosts);
+    const i = setInterval(() => api.listPosts().then(setPosts), 2000);
+    return () => clearInterval(i);
+  }, []);
   return (
     <div className="container-rhode py-16">
       <h1 className="font-display text-5xl md:text-6xl mb-12">Журнал</h1>
       <div className="grid md:grid-cols-3 gap-x-6 gap-y-12">
-        {POSTS.map((p) => (
+        {posts.map((p) => (
           <Link
             key={p.slug}
             to="/journal/$slug"
             params={{ slug: p.slug }}
+            target="_blank"
+            rel="noopener noreferrer"
             className="group block"
           >
             <div className="aspect-[4/5] overflow-hidden bg-muted">

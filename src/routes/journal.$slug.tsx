@@ -1,9 +1,12 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { POSTS } from "@/lib/posts";
+import { POSTS as SEED_POSTS } from "@/lib/posts";
+import { useEffect, useState } from "react";
+import { api, type Post } from "@/lib/api";
 
 export const Route = createFileRoute("/journal/$slug")({
   loader: ({ params }) => {
-    const post = POSTS.find((p) => p.slug === params.slug);
+    // SSR fallback uses seed posts; client refetches via api.
+    const post = SEED_POSTS.find((p) => p.slug === params.slug);
     if (!post) throw notFound();
     return { post };
   },
@@ -28,7 +31,11 @@ export const Route = createFileRoute("/journal/$slug")({
 });
 
 function PostPage() {
-  const { post } = Route.useLoaderData();
+  const { post: initial } = Route.useLoaderData();
+  const [post, setPost] = useState<Post>(initial);
+  useEffect(() => {
+    api.getPost(initial.slug).then((p) => { if (p) setPost(p); });
+  }, [initial.slug]);
   return (
     <article>
       <div className="relative h-[60vh] min-h-[420px] w-full overflow-hidden">
