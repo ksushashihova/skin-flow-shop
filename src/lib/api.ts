@@ -391,6 +391,12 @@ export const api = {
     if (o.status === "shipped" || o.status === "completed") {
       throw new Error("Этот заказ уже нельзя отменить");
     }
+    if (o.status !== "cancelled") {
+      for (const it of o.items) {
+        const p = s.products.find((p) => p.id === it.productId);
+        if (p) p.stock += it.quantity;
+      }
+    }
     o.status = "cancelled";
     o.updatedAt = new Date().toISOString();
     save(s);
