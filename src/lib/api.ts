@@ -300,7 +300,11 @@ export const api = {
   },
   async addToCart(productId: string, quantity = 1): Promise<CartItem[]> {
     const s = load();
+    const product = s.products.find((p) => p.id === productId);
+    if (!product) throw new Error("Товар не найден");
     const existing = s.cart.find((c) => c.productId === productId);
+    const desired = (existing?.quantity ?? 0) + quantity;
+    if (desired > product.stock) throw new Error(`Доступно только ${product.stock} шт.`);
     if (existing) existing.quantity += quantity;
     else s.cart.push({ id: "ci_" + Math.random().toString(36).slice(2, 8), productId, quantity });
     save(s);
@@ -339,6 +343,16 @@ export const api = {
       const p = s.products.find((p) => p.id === c.productId)!;
       return { productId: p.id, name: p.name_ru, quantity: c.quantity, price: p.price, image: p.images[0] };
     });
+    // проверка остатков
+    for (const it of items) {
+      const p = s.products.find((p) => p.id === it.productId)!;
+      if (it.quantity > p.stock) throw new Error(`Недостаточно "${p.name_ru}": доступно ${p.stock}`);
+    }
+    // списание остатков
+    for (const it of items) {
+      const p = s.products.find((p) => p.id === it.productId)!;
+      p.stock = Math.max(0, p.stock - it.quantity);
+    }
     const deliveryPrice = DELIVERY_PRICES[deliveryMethod];
     const order: Order = {
       id: "o_" + Date.now().toString(36),
