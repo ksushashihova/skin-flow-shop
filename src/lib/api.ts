@@ -1,7 +1,7 @@
 // Mock REST API layer.
 // CONTRACT — реализуйте на своём Next.js + Express + PostgreSQL backend как есть:
 //
-//   POST   /api/auth/register       { email, password, name }            -> { token, user }
+//   POST   /api/auth/register       { email, password, name, phone? }    -> { token, user }
 //   POST   /api/auth/login          { email, password }                  -> { token, user }
 //   GET    /api/users/me                                                 -> User
 //   PUT    /api/users/me            { name?, phone? }                    -> User
@@ -14,9 +14,10 @@
 //   PUT    /api/cart/:itemId        { quantity }                         -> CartItem[]
 //   DELETE /api/cart/:itemId                                             -> CartItem[]
 //
-//   POST   /api/orders              { addressId, consent: true }         -> Order
+//   POST   /api/orders              { address, paymentMethod, deliveryMethod, consent } -> Order
 //   GET    /api/orders                                                   -> Order[]
 //   GET    /api/orders/:id                                               -> Order
+//   POST   /api/orders/:id/cancel                                        -> Order
 //
 //   GET    /api/admin/orders                                             -> Order[]
 //   PATCH  /api/admin/orders/:id    { status }                           -> Order
@@ -24,6 +25,8 @@
 
 export type Role = "guest" | "user" | "admin";
 export type OrderStatus = "new" | "paid" | "shipped" | "completed" | "cancelled";
+export type PaymentMethod = "card_online" | "card_on_delivery" | "sbp" | "cash";
+export type DeliveryMethod = "pickup" | "courier" | "post" | "cdek";
 
 export interface User {
   id: string;
@@ -43,7 +46,7 @@ export interface Product {
   tagline_en: string;
   description_ru: string;
   description_en: string;
-  price: number; // RUB
+  price: number;
   images: string[];
   stock: number;
   category: "lip" | "skin" | "body";
@@ -60,6 +63,7 @@ export interface OrderItem {
   name: string;
   quantity: number;
   price: number;
+  image?: string;
 }
 
 export interface Order {
@@ -70,6 +74,9 @@ export interface Order {
   totalPrice: number;
   items: OrderItem[];
   address: { city: string; addressLine: string; postalCode: string };
+  paymentMethod: PaymentMethod;
+  deliveryMethod: DeliveryMethod;
+  deliveryPrice: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -84,8 +91,7 @@ export interface Address {
 
 import { PRODUCTS } from "./products";
 
-// ---------- in-memory store (демо) ----------
-const LS_KEY = "demo_state_v1";
+const LS_KEY = "demo_state_v2";
 
 interface DemoState {
   users: (User & { passwordHash: string })[];
@@ -101,7 +107,7 @@ function load(): DemoState {
   }
   const raw = localStorage.getItem(LS_KEY);
   if (raw) {
-    try { return JSON.parse(raw) as DemoState; } catch {/* ignore */}
+    try { return JSON.parse(raw) as DemoState; } catch { /* ignore */ }
   }
   const initial: DemoState = {
     users: seedUsers(),
@@ -123,6 +129,7 @@ function seedUsers(): (User & { passwordHash: string })[] {
       email: "admin@demo.ru",
       role: "admin",
       name: "Администратор",
+      phone: "+7 999 000 00 00",
       passwordHash: "admin123",
       createdAt: new Date().toISOString(),
     },
@@ -131,6 +138,7 @@ function seedUsers(): (User & { passwordHash: string })[] {
       email: "client@demo.ru",
       role: "user",
       name: "Анна",
+      phone: "+7 916 123 45 67",
       passwordHash: "demo1234",
       createdAt: new Date().toISOString(),
     },
@@ -145,9 +153,12 @@ function seedOrders(): Order[] {
       status: "shipped",
       totalPrice: 4980,
       items: [
-        { productId: PRODUCTS[0].id, name: PRODUCTS[0].name_ru, quantity: 2, price: PRODUCTS[0].price },
+        { productId: PRODUCTS[0].id, name: PRODUCTS[0].name_ru, quantity: 2, price: PRODUCTS[0].price, image: PRODUCTS[0].images[0] },
       ],
       address: { city: "Москва", addressLine: "ул. Тверская, 12", postalCode: "125009" },
+      paymentMethod: "card_online",
+      deliveryMethod: "courier",
+      deliveryPrice: 0,
       createdAt: new Date(Date.now() - 86400000 * 4).toISOString(),
       updatedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
     },
@@ -162,15 +173,21 @@ function strip(u: User & { passwordHash: string }): User {
   return rest;
 }
 
-// ---------- Auth ----------
+export const DELIVERY_PRICES: Record<DeliveryMethod, number> = {
+  pickup: 0,
+  courier: 390,
+  post: 290,
+  cdek: 350,
+};
+
 export const api = {
-  async register(email: string, password: string, name: string): Promise<{ token: string; user: User }> {
+  async register(email: string, password: string, name: string, phone?: string) {
     await delay();
     const s = load();
     if (s.users.find((u) => u.email === email)) throw new Error("Пользователь с таким email уже существует");
     const u = {
       id: "u_" + Math.random().toString(36).slice(2, 8),
-      email, role: "user" as Role, name, passwordHash: password,
+      email, role: "user" as Role, name, phone, passwordHash: password,
       createdAt: new Date().toISOString(),
     };
     s.users.push(u);
@@ -211,7 +228,6 @@ export const api = {
     return strip(u);
   },
 
-  // ---------- Products ----------
   async listProducts(query = ""): Promise<Product[]> {
     await delay(150);
     const q = query.trim().toLowerCase();
@@ -225,7 +241,6 @@ export const api = {
     return PRODUCTS.find((p) => p.id === id || p.slug === id) ?? null;
   },
 
-  // ---------- Cart ----------
   async getCart(): Promise<CartItem[]> {
     return load().cart;
   },
@@ -254,8 +269,12 @@ export const api = {
     return s.cart;
   },
 
-  // ---------- Orders ----------
-  async createOrder(address: { city: string; addressLine: string; postalCode: string }, consent: boolean): Promise<Order> {
+  async createOrder(
+    address: { city: string; addressLine: string; postalCode: string },
+    paymentMethod: PaymentMethod,
+    deliveryMethod: DeliveryMethod,
+    consent: boolean,
+  ): Promise<Order> {
     await delay(400);
     if (!consent) throw new Error("Необходимо согласие на обработку персональных данных");
     const s = load();
@@ -264,23 +283,26 @@ export const api = {
     const user = s.users.find((u) => u.id === s.sessionUserId)!;
     const items: OrderItem[] = s.cart.map((c) => {
       const p = PRODUCTS.find((p) => p.id === c.productId)!;
-      return { productId: p.id, name: p.name_ru, quantity: c.quantity, price: p.price };
+      return { productId: p.id, name: p.name_ru, quantity: c.quantity, price: p.price, image: p.images[0] };
     });
+    const deliveryPrice = DELIVERY_PRICES[deliveryMethod];
     const order: Order = {
       id: "o_" + Date.now().toString(36),
       userId: user.id,
       userEmail: user.email,
       status: "new",
-      totalPrice: items.reduce((sum, i) => sum + i.price * i.quantity, 0),
+      totalPrice: items.reduce((sum, i) => sum + i.price * i.quantity, 0) + deliveryPrice,
       items,
       address,
+      paymentMethod,
+      deliveryMethod,
+      deliveryPrice,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
     s.orders.unshift(order);
     s.cart = [];
     save(s);
-    // здесь backend отправляет email через SMTP
     console.info("[demo] email подтверждения отправлен на", user.email);
     return order;
   },
@@ -293,8 +315,20 @@ export const api = {
     const s = load();
     return s.orders.find((o) => o.id === id) ?? null;
   },
+  async cancelOrder(id: string): Promise<Order> {
+    const s = load();
+    const o = s.orders.find((x) => x.id === id);
+    if (!o) throw new Error("Заказ не найден");
+    if (o.userId !== s.sessionUserId) throw new Error("Нет доступа");
+    if (o.status === "shipped" || o.status === "completed") {
+      throw new Error("Этот заказ уже нельзя отменить");
+    }
+    o.status = "cancelled";
+    o.updatedAt = new Date().toISOString();
+    save(s);
+    return o;
+  },
 
-  // ---------- Admin ----------
   async adminListOrders(): Promise<Order[]> {
     return load().orders;
   },
@@ -309,5 +343,8 @@ export const api = {
   },
   async adminListUsers(): Promise<User[]> {
     return load().users.map(strip);
+  },
+  async adminGetUserOrders(userId: string): Promise<Order[]> {
+    return load().orders.filter((o) => o.userId === userId);
   },
 };
