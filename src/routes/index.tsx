@@ -1,26 +1,110 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { api, type Product } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
+import { ProductCard } from "@/components/product-card";
 
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "ОБЛАКО — минималистичный уход за кожей" },
+      { name: "description", content: "Чистые формулы и премиальные текстуры. Российский бренд ухода за кожей." },
+    ],
+  }),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. For sites with multiple pages (About, Services, Contact, etc.),
-// create separate route files (about.tsx, services.tsx, contact.tsx) — don't put all pages in this file.
-function PlaceholderIndex() {
+function Index() {
+  const { t } = useI18n();
+  const [products, setProducts] = useState<Product[]>([]);
+  useEffect(() => { api.listProducts().then(setProducts); }, []);
+
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
+    <div>
+      {/* HERO */}
+      <section className="relative h-[88vh] min-h-[640px] w-full overflow-hidden">
+        <img
+          src="https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=2000&q=80"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/30" />
+        <div className="container-rhode relative h-full flex flex-col justify-end pb-20">
+          <div className="fade-up max-w-2xl">
+            <h1 className="font-display text-5xl md:text-7xl leading-[1.05] text-background mix-blend-difference">
+              {t("hero.title")}
+            </h1>
+            <p className="mt-6 text-base md:text-lg text-background/90 mix-blend-difference max-w-lg">
+              {t("hero.subtitle")}
+            </p>
+            <Link
+              to="/shop"
+              className="inline-block mt-10 bg-background text-foreground px-10 py-4 text-xs uppercase tracking-[0.2em] hover:bg-foreground hover:text-background transition-colors"
+            >
+              {t("hero.cta")}
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* MARQUEE */}
+      <section className="py-8 border-y border-border overflow-hidden">
+        <div className="marquee text-sm uppercase tracking-[0.3em] text-muted-foreground">
+          {Array.from({ length: 2 }).map((_, k) => (
+            <div key={k} className="flex gap-12 shrink-0">
+              <span>Чистые формулы</span><span>·</span>
+              <span>Российское производство</span><span>·</span>
+              <span>Без жестокости</span><span>·</span>
+              <span>Дерматологический контроль</span><span>·</span>
+              <span>Доставка по России</span><span>·</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* BESTSELLERS */}
+      <section className="container-rhode py-24">
+        <div className="flex items-end justify-between mb-12">
+          <h2 className="font-display text-4xl md:text-5xl">{t("section.bestsellers")}</h2>
+          <Link to="/shop" className="text-sm hover-underline">{t("nav.shop")}</Link>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-12">
+          {products.slice(0, 4).map((p) => (
+            <ProductCard key={p.id} product={p} />
+          ))}
+        </div>
+      </section>
+
+      {/* PHILOSOPHY */}
+      <section className="bg-secondary">
+        <div className="container-rhode py-24 grid md:grid-cols-2 gap-16 items-center">
+          <img
+            src="https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=1400&q=80"
+            alt=""
+            className="aspect-[4/5] w-full object-cover"
+          />
+          <div>
+            <div className="uppercase text-xs tracking-[0.3em] text-muted-foreground mb-6">
+              {t("section.philosophy")}
+            </div>
+            <h2 className="font-display text-4xl md:text-5xl leading-tight mb-8">
+              Тихий ритуал каждое утро и вечер.
+            </h2>
+            <p className="text-muted-foreground leading-relaxed max-w-md">
+              {t("section.philosophy.text")}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* FULL CATALOG GRID */}
+      <section className="container-rhode py-24">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-12">
+          {products.slice(4).map((p) => (
+            <ProductCard key={p.id} product={p} />
+          ))}
+        </div>
+      </section>
     </div>
   );
-}
-
-function Index() {
-  return <PlaceholderIndex />;
 }
