@@ -58,7 +58,7 @@ function RootComponent() {
 
   useEffect(() => {
     let alive = true;
-    api.me().then((user) => {
+    const checkAdmin = () => api.me().then((user) => {
       if (!alive) return;
       const admin = user?.role === "admin";
       setIsAdminSession(admin);
@@ -67,7 +67,14 @@ function RootComponent() {
         navigate({ to: "/admin", replace: true });
       }
     });
-    return () => { alive = false; };
+    checkAdmin();
+    window.addEventListener("oblako-auth-change", checkAdmin);
+    window.addEventListener("storage", checkAdmin);
+    return () => {
+      alive = false;
+      window.removeEventListener("oblako-auth-change", checkAdmin);
+      window.removeEventListener("storage", checkAdmin);
+    };
   }, [navigate, pathname]);
 
   return (

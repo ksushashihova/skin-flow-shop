@@ -157,6 +157,9 @@ function load(): DemoState {
 function save(s: DemoState) {
   if (typeof window !== "undefined") localStorage.setItem(LS_KEY, JSON.stringify(s));
 }
+function emitAuthChange() {
+  if (typeof window !== "undefined") window.dispatchEvent(new Event("oblako-auth-change"));
+}
 function seedUsers(): (User & { passwordHash: string })[] {
   return [
     {
@@ -245,6 +248,7 @@ export const api = {
     s.users.push(u);
     s.sessionUserId = u.id;
     save(s);
+    emitAuthChange();
     return { token: "demo." + u.id, user: strip(u) };
   },
 
@@ -255,6 +259,7 @@ export const api = {
     if (!u) throw new Error("Неверный email или пароль");
     s.sessionUserId = u.id;
     save(s);
+    emitAuthChange();
     return { token: "demo." + u.id, user: strip(u) };
   },
 
@@ -262,6 +267,7 @@ export const api = {
     const s = load();
     s.sessionUserId = null;
     save(s);
+    emitAuthChange();
   },
 
   async me(): Promise<User | null> {
