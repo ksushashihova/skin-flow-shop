@@ -9,24 +9,31 @@ const NAV_LINKS = [
   { to: "/journal" as const, key: "nav.journal" as const },
 ];
 
-export function SiteHeader() {
-  const { t, lang, setLang } = useI18n();
-  const router = useRouter();
+function useChrome() {
   const [user, setUser] = useState<User | null>(null);
   const [count, setCount] = useState(0);
-  const [open, setOpen] = useState(false);
-
-  const refresh = async () => {
-    setUser(await api.me());
-    const c = await api.getCart();
-    setCount(c.reduce((s, i) => s + i.quantity, 0));
-  };
-
   useEffect(() => {
+    const refresh = async () => {
+      setUser(await api.me());
+      const c = await api.getCart();
+      setCount(c.reduce((s, i) => s + i.quantity, 0));
+    };
     refresh();
     const i = setInterval(refresh, 1500);
     return () => clearInterval(i);
   }, []);
+  return { user, count };
+}
+
+/** Drawer-меню слева, читаемое, со всеми пунктами */
+function MobileDrawer({
+  open, onClose, user, count, variant = "dark",
+}: {
+  open: boolean; onClose: () => void; user: User | null; count: number;
+  variant?: "dark" | "light";
+}) {
+  const { t, lang, setLang } = useI18n();
+  const router = useRouter();
 
   useEffect(() => {
     if (open) document.body.style.overflow = "hidden";
@@ -34,10 +41,113 @@ export function SiteHeader() {
     return () => { document.body.style.overflow = ""; };
   }, [open]);
 
+  const linkBase = "block py-4 font-display text-3xl text-foreground hover:opacity-60 transition-opacity";
+
+  return (
+    <div
+      onClick={onClose}
+      className={`fixed inset-0 z-[80] md:hidden transition-opacity duration-300 ${open ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+      aria-hidden={!open}
+    >
+      <div className="absolute inset-0 bg-foreground/55 backdrop-blur-sm" />
+      <aside
+        onClick={(e) => e.stopPropagation()}
+        className={`absolute left-0 top-0 h-full w-[88%] max-w-[420px] bg-background shadow-2xl transition-transform duration-300 ease-out ${open ? "translate-x-0" : "-translate-x-full"} flex flex-col`}
+      >
+        {/* header */}
+        <div className="flex items-center justify-between px-7 h-20 border-b border-border">
+          <Link to="/" onClick={onClose} className="font-display text-2xl tracking-tight">
+            ОБЛАКО
+          </Link>
+          <button
+            onClick={onClose}
+            aria-label="Закрыть"
+            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-secondary transition-colors"
+          >
+            <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
+              <path d="M2 2L14 14M14 2L2 14" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+
+        {/* main nav */}
+        <nav className="flex-1 overflow-y-auto px-7 py-6">
+          <ul className="divide-y divide-border/70">
+            {NAV_LINKS.map((l) => (
+              <li key={l.to}>
+                <Link to={l.to} onClick={onClose} className={linkBase}>
+                  {t(l.key)}
+                </Link>
+              </li>
+            ))}
+            <li>
+              <Link to="/cart" onClick={onClose} className={linkBase + " flex items-center justify-between"}>
+                <span>{t("nav.cart")}</span>
+                <span className="text-base text-muted-foreground tabular-nums">{count}</span>
+              </Link>
+            </li>
+            <li>
+              <Link to="/account" onClick={onClose} className={linkBase}>
+                {user ? user.name.split(" ")[0] : t("nav.account")}
+              </Link>
+            </li>
+            {user?.role === "admin" && (
+              <li>
+                <Link to="/admin" onClick={onClose} className={linkBase}>
+                  {t("nav.admin")}
+                </Link>
+              </li>
+            )}
+            <li>
+              <Link to="/privacy" onClick={onClose} className="block py-4 text-sm text-muted-foreground hover:text-foreground">
+                Политика конфиденциальности
+              </Link>
+            </li>
+          </ul>
+        </nav>
+
+        {/* footer actions */}
+        <div className="px-7 py-6 border-t border-border flex items-center justify-between gap-4 bg-secondary/40">
+          <button
+            onClick={() => setLang(lang === "ru" ? "en" : "ru")}
+            className="flex items-center gap-2 text-xs uppercase tracking-[0.25em]"
+          >
+            <span className={lang === "ru" ? "font-semibold" : "text-muted-foreground"}>RU</span>
+            <span className="text-muted-foreground">/</span>
+            <span className={lang === "en" ? "font-semibold" : "text-muted-foreground"}>EN</span>
+          </button>
+          {user ? (
+            <button
+              onClick={async () => { await api.logout(); onClose(); router.invalidate(); }}
+              className="text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-foreground"
+            >
+              {t("auth.logout")}
+            </button>
+          ) : (
+            <Link
+              to="/account"
+              onClick={onClose}
+              className="text-xs uppercase tracking-[0.25em] font-semibold"
+            >
+              {t("auth.login")}
+            </Link>
+          )}
+        </div>
+      </aside>
+    </div>
+  );
+  void variant;
+}
+
+/** Глобальный header (на всех страницах кроме / и /admin) */
+export function SiteHeader() {
+  const { t, lang, setLang } = useI18n();
+  const { user, count } = useChrome();
+  const [open, setOpen] = useState(false);
+
   return (
     <header className="sticky top-0 z-40 bg-background/85 backdrop-blur border-b border-border">
       <div className="container-rhode grid grid-cols-3 items-center h-16">
-        {/* left: nav (desktop) / burger (mobile) */}
         <div className="flex items-center">
           <button
             onClick={() => setOpen(true)}
@@ -57,14 +167,10 @@ export function SiteHeader() {
           </nav>
         </div>
 
-        {/* center: logo */}
         <div className="flex justify-center">
-          <Link to="/" className="font-display text-2xl tracking-tight">
-            ОБЛАКО
-          </Link>
+          <Link to="/" className="font-display text-2xl tracking-tight">ОБЛАКО</Link>
         </div>
 
-        {/* right: actions */}
         <div className="flex items-center justify-end gap-5 text-sm">
           <button
             onClick={() => setLang(lang === "ru" ? "en" : "ru")}
@@ -84,144 +190,78 @@ export function SiteHeader() {
         </div>
       </div>
 
-      {/* mobile drawer */}
-      <div
-        onClick={() => setOpen(false)}
-        className={`fixed inset-0 z-[60] md:hidden transition-opacity duration-300 ${open ? "opacity-100" : "opacity-0 pointer-events-none"}`}
-      >
-        <div className="absolute inset-0 bg-foreground/50 backdrop-blur-sm" />
-        <aside
-          onClick={(e) => e.stopPropagation()}
-          className={`absolute right-0 top-0 h-full w-[86%] max-w-sm bg-background shadow-2xl transition-transform duration-300 ease-out ${open ? "translate-x-0" : "translate-x-full"} flex flex-col`}
-        >
-          {/* header */}
-          <div className="flex items-center justify-between px-6 h-16 border-b border-border">
-            <span className="font-display text-xl tracking-tight">ОБЛАКО</span>
-            <button
-              onClick={() => setOpen(false)}
-              aria-label="Закрыть"
-              className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-secondary transition-colors"
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M2 2L14 14M14 2L2 14" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-              </svg>
-            </button>
-          </div>
-
-          {/* user pill */}
-          <div className="px-6 pt-5 pb-4 border-b border-border">
-            {user ? (
-              <Link
-                to="/account"
-                onClick={() => setOpen(false)}
-                className="flex items-center gap-3 group"
-              >
-                <span className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center font-display text-base">
-                  {user.name.charAt(0)}
-                </span>
-                <span className="flex flex-col">
-                  <span className="text-sm font-medium">{user.name}</span>
-                  <span className="text-xs text-muted-foreground">{user.email}</span>
-                </span>
-              </Link>
-            ) : (
-              <Link
-                to="/account"
-                onClick={() => setOpen(false)}
-                className="flex items-center justify-between px-4 py-3 rounded-full bg-foreground text-background text-sm uppercase tracking-widest"
-              >
-                <span>{t("auth.login")}</span>
-                <span>→</span>
-              </Link>
-            )}
-          </div>
-
-          {/* main nav */}
-          <nav className="flex-1 overflow-y-auto px-2 py-4">
-            <ul className="flex flex-col">
-              {NAV_LINKS.map((l) => (
-                <li key={l.to}>
-                  <Link
-                    to={l.to}
-                    onClick={() => setOpen(false)}
-                    className="flex items-center justify-between px-4 py-4 rounded-lg text-foreground hover:bg-secondary transition-colors"
-                  >
-                    <span className="font-display text-xl">{t(l.key)}</span>
-                    <span className="text-muted-foreground text-sm">→</span>
-                  </Link>
-                </li>
-              ))}
-
-              <li className="mt-2 mb-1 px-4 text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
-                Кабинет
-              </li>
-              <li>
-                <Link
-                  to="/cart"
-                  onClick={() => setOpen(false)}
-                  className="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-secondary transition-colors"
-                >
-                  <span className="text-base">{t("nav.cart")}</span>
-                  <span className="text-xs text-muted-foreground tabular-nums">{count}</span>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/account"
-                  onClick={() => setOpen(false)}
-                  className="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-secondary transition-colors"
-                >
-                  <span className="text-base">{t("nav.account")}</span>
-                  <span className="text-muted-foreground text-sm">→</span>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/privacy"
-                  onClick={() => setOpen(false)}
-                  className="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-secondary transition-colors"
-                >
-                  <span className="text-base">Политика конфиденциальности</span>
-                  <span className="text-muted-foreground text-sm">→</span>
-                </Link>
-              </li>
-              {user?.role === "admin" && (
-                <li>
-                  <Link
-                    to="/admin"
-                    onClick={() => setOpen(false)}
-                    className="flex items-center justify-between px-4 py-3 rounded-lg bg-secondary/60 hover:bg-secondary transition-colors"
-                  >
-                    <span className="text-base font-medium">{t("nav.admin")}</span>
-                    <span className="text-muted-foreground text-sm">→</span>
-                  </Link>
-                </li>
-              )}
-            </ul>
-          </nav>
-
-          {/* footer actions */}
-          <div className="px-6 py-5 border-t border-border flex items-center justify-between gap-4">
-            <button
-              onClick={() => setLang(lang === "ru" ? "en" : "ru")}
-              className="flex items-center gap-2 text-xs uppercase tracking-widest"
-            >
-              <span className={lang === "ru" ? "font-semibold" : "text-muted-foreground"}>RU</span>
-              <span className="text-muted-foreground">/</span>
-              <span className={lang === "en" ? "font-semibold" : "text-muted-foreground"}>EN</span>
-            </button>
-            {user && (
-              <button
-                onClick={async () => { await api.logout(); setOpen(false); router.invalidate(); }}
-                className="text-xs uppercase tracking-widest text-muted-foreground hover:text-foreground"
-              >
-                {t("auth.logout")}
-              </button>
-            )}
-          </div>
-        </aside>
-      </div>
+      <MobileDrawer open={open} onClose={() => setOpen(false)} user={user} count={count} />
     </header>
+  );
+}
+
+/**
+ * Header главной страницы — в стиле Rhode:
+ * — узкая полоса сверху с центрированным "ОБЛАКО"
+ * — навигация поверх hero-картинки (белым), бургер слева на мобилке
+ */
+export function HomeHeader() {
+  const { t, lang, setLang } = useI18n();
+  const { user, count } = useChrome();
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      {/* Тонкая верхняя полоса с лого */}
+      <div className="w-full bg-background border-b border-border">
+        <div className="container-rhode flex items-center justify-center h-12">
+          <Link to="/" className="font-display text-xl md:text-2xl tracking-tight">
+            ОБЛАКО
+          </Link>
+        </div>
+      </div>
+
+      {/* Навигация поверх hero (рендерится в hero-секции через absolute) */}
+      <nav className="absolute top-0 left-0 right-0 z-30 px-6 md:px-10 h-16 md:h-20 flex items-center justify-between text-background">
+        {/* left: nav (desktop) / burger (mobile) */}
+        <div className="flex items-center gap-8">
+          <button
+            onClick={() => setOpen(true)}
+            aria-label="Меню"
+            className="md:hidden flex flex-col gap-[5px] p-2 -ml-2"
+          >
+            <span className="w-6 h-px bg-background" />
+            <span className="w-6 h-px bg-background" />
+            <span className="w-6 h-px bg-background" />
+          </button>
+          <div className="hidden md:flex items-center gap-10 text-xs uppercase tracking-[0.25em] font-medium">
+            {NAV_LINKS.map((l) => (
+              <Link key={l.to} to={l.to} className="hover:opacity-70 transition-opacity">
+                {t(l.key)}
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* right */}
+        <div className="flex items-center gap-5 md:gap-8 text-xs uppercase tracking-[0.25em] font-medium">
+          <button
+            onClick={() => setLang(lang === "ru" ? "en" : "ru")}
+            className="hidden sm:inline hover:opacity-70 transition-opacity"
+          >
+            {lang === "ru" ? "EN" : "RU"}
+          </button>
+          {user?.role === "admin" && (
+            <Link to="/admin" className="hidden md:inline hover:opacity-70 transition-opacity">
+              {t("nav.admin")}
+            </Link>
+          )}
+          <Link to="/account" className="hidden md:inline hover:opacity-70 transition-opacity">
+            {user ? user.name.split(" ")[0] : t("nav.account")}
+          </Link>
+          <Link to="/cart" className="hover:opacity-70 transition-opacity">
+            {t("nav.cart")} ({count})
+          </Link>
+        </div>
+      </nav>
+
+      <MobileDrawer open={open} onClose={() => setOpen(false)} user={user} count={count} />
+    </>
   );
 }
 
