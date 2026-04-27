@@ -47,10 +47,13 @@ function RootShell({ children }: { children: React.ReactNode }) {
 function RootComponent() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isAdmin = pathname.startsWith("/admin");
+  // Главная имеет собственную «внутри-картинки» навигацию (стиль Rhode)
+  const isHome = pathname === "/";
+  const hideChrome = isAdmin || isHome;
   return (
     <I18nProvider>
       <div className="min-h-screen flex flex-col">
-        {!isAdmin && <SiteHeader />}
+        {!hideChrome && <SiteHeader />}
         <main className="flex-1">
           <Outlet />
         </main>
