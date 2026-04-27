@@ -195,30 +195,31 @@ export function SiteHeader() {
   );
 }
 
+/** Узкая полоса сверху с центрированным логотипом — над hero */
+export function HomeTopBar() {
+  return (
+    <div className="w-full bg-background border-b border-border">
+      <div className="container-rhode flex items-center justify-center h-12">
+        <Link to="/" className="font-display text-xl md:text-2xl tracking-tight">
+          ОБЛАКО
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 /**
- * Header главной страницы — в стиле Rhode:
- * — узкая полоса сверху с центрированным "ОБЛАКО"
- * — навигация поверх hero-картинки (белым), бургер слева на мобилке
+ * Навигация для главной — рендерится ВНУТРИ relative-контейнера hero-картинки.
+ * Текст белый, бургер слева на мобилке.
  */
-export function HomeHeader() {
+export function HomeHeroNav() {
   const { t, lang, setLang } = useI18n();
   const { user, count } = useChrome();
   const [open, setOpen] = useState(false);
 
   return (
     <>
-      {/* Тонкая верхняя полоса с лого */}
-      <div className="w-full bg-background border-b border-border">
-        <div className="container-rhode flex items-center justify-center h-12">
-          <Link to="/" className="font-display text-xl md:text-2xl tracking-tight">
-            ОБЛАКО
-          </Link>
-        </div>
-      </div>
-
-      {/* Навигация поверх hero (рендерится в hero-секции через absolute) */}
       <nav className="absolute top-0 left-0 right-0 z-30 px-6 md:px-10 h-16 md:h-20 flex items-center justify-between text-background">
-        {/* left: nav (desktop) / burger (mobile) */}
         <div className="flex items-center gap-8">
           <button
             onClick={() => setOpen(true)}
@@ -238,7 +239,6 @@ export function HomeHeader() {
           </div>
         </div>
 
-        {/* right */}
         <div className="flex items-center gap-5 md:gap-8 text-xs uppercase tracking-[0.25em] font-medium">
           <button
             onClick={() => setLang(lang === "ru" ? "en" : "ru")}
