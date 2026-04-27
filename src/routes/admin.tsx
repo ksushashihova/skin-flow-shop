@@ -109,7 +109,11 @@ function OrdersPanel({ lang, switchToUser }: { lang: "ru" | "en"; switchToUser: 
     setOrders(await api.adminListOrders());
     setUsers(await api.adminListUsers());
   };
-  useEffect(() => { refresh(); }, []);
+  useEffect(() => {
+    refresh();
+    const i = setInterval(refresh, 2000);
+    return () => clearInterval(i);
+  }, []);
 
   const userOf = (uid: string) => users.find((u) => u.id === uid);
 
