@@ -19,6 +19,7 @@ import { Route as AccountRouteImport } from './routes/account'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProductSlugRouteImport } from './routes/product.$slug'
+import { Route as JournalSlugRouteImport } from './routes/journal.$slug'
 
 const ShopRoute = ShopRouteImport.update({
   id: '/shop',
@@ -70,6 +71,11 @@ const ProductSlugRoute = ProductSlugRouteImport.update({
   path: '/product/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const JournalSlugRoute = JournalSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => JournalRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -78,9 +84,10 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
-  '/journal': typeof JournalRoute
+  '/journal': typeof JournalRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/shop': typeof ShopRoute
+  '/journal/$slug': typeof JournalSlugRoute
   '/product/$slug': typeof ProductSlugRoute
 }
 export interface FileRoutesByTo {
@@ -90,9 +97,10 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
-  '/journal': typeof JournalRoute
+  '/journal': typeof JournalRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/shop': typeof ShopRoute
+  '/journal/$slug': typeof JournalSlugRoute
   '/product/$slug': typeof ProductSlugRoute
 }
 export interface FileRoutesById {
@@ -103,9 +111,10 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
-  '/journal': typeof JournalRoute
+  '/journal': typeof JournalRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/shop': typeof ShopRoute
+  '/journal/$slug': typeof JournalSlugRoute
   '/product/$slug': typeof ProductSlugRoute
 }
 export interface FileRouteTypes {
@@ -120,6 +129,7 @@ export interface FileRouteTypes {
     | '/journal'
     | '/privacy'
     | '/shop'
+    | '/journal/$slug'
     | '/product/$slug'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -132,6 +142,7 @@ export interface FileRouteTypes {
     | '/journal'
     | '/privacy'
     | '/shop'
+    | '/journal/$slug'
     | '/product/$slug'
   id:
     | '__root__'
@@ -144,6 +155,7 @@ export interface FileRouteTypes {
     | '/journal'
     | '/privacy'
     | '/shop'
+    | '/journal/$slug'
     | '/product/$slug'
   fileRoutesById: FileRoutesById
 }
@@ -154,7 +166,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   CartRoute: typeof CartRoute
   CheckoutRoute: typeof CheckoutRoute
-  JournalRoute: typeof JournalRoute
+  JournalRoute: typeof JournalRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
   ShopRoute: typeof ShopRoute
   ProductSlugRoute: typeof ProductSlugRoute
@@ -232,8 +244,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProductSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/journal/$slug': {
+      id: '/journal/$slug'
+      path: '/$slug'
+      fullPath: '/journal/$slug'
+      preLoaderRoute: typeof JournalSlugRouteImport
+      parentRoute: typeof JournalRoute
+    }
   }
 }
+
+interface JournalRouteChildren {
+  JournalSlugRoute: typeof JournalSlugRoute
+}
+
+const JournalRouteChildren: JournalRouteChildren = {
+  JournalSlugRoute: JournalSlugRoute,
+}
+
+const JournalRouteWithChildren =
+  JournalRoute._addFileChildren(JournalRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -242,7 +272,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   CartRoute: CartRoute,
   CheckoutRoute: CheckoutRoute,
-  JournalRoute: JournalRoute,
+  JournalRoute: JournalRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
   ShopRoute: ShopRoute,
   ProductSlugRoute: ProductSlugRoute,
