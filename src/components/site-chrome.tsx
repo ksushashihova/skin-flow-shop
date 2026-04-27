@@ -87,48 +87,94 @@ export function SiteHeader() {
       {/* mobile drawer */}
       <div
         onClick={() => setOpen(false)}
-        className={`fixed inset-0 z-50 bg-foreground/30 transition-opacity md:hidden ${open ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        className={`fixed inset-0 z-50 bg-foreground/40 transition-opacity duration-300 md:hidden ${open ? "opacity-100" : "opacity-0 pointer-events-none"}`}
       >
         <aside
           onClick={(e) => e.stopPropagation()}
-          className={`absolute right-0 top-0 h-full w-[82%] max-w-sm bg-background shadow-xl transition-transform ${open ? "translate-x-0" : "translate-x-full"} flex flex-col`}
+          className={`absolute right-0 top-0 h-full w-[88%] max-w-md bg-background shadow-2xl transition-transform duration-300 ${open ? "translate-x-0" : "translate-x-full"} flex flex-col`}
         >
-          <div className="flex items-center justify-between px-6 h-16 border-b border-border">
-            <span className="font-display text-xl">Меню</span>
-            <button onClick={() => setOpen(false)} aria-label="Закрыть" className="text-2xl leading-none">×</button>
+          <div className="flex items-center justify-between px-6 h-20 border-b border-border">
+            <span className="font-display text-2xl">ОБЛАКО</span>
+            <button
+              onClick={() => setOpen(false)}
+              aria-label="Закрыть"
+              className="w-10 h-10 flex items-center justify-center text-3xl leading-none text-foreground hover:opacity-60"
+            >
+              ×
+            </button>
           </div>
-          <nav className="flex flex-col px-6 py-6 gap-1 text-base">
-            {NAV_LINKS.map((l) => (
-              <Link key={l.to} to={l.to} onClick={() => setOpen(false)} className="py-3 border-b border-border">
-                {t(l.key)}
-              </Link>
-            ))}
-            <Link to="/account" onClick={() => setOpen(false)} className="py-3 border-b border-border">
-              {user ? user.name : t("nav.account")}
-            </Link>
-            <Link to="/cart" onClick={() => setOpen(false)} className="py-3 border-b border-border">
-              {t("nav.cart")} ({count})
-            </Link>
-            {user?.role === "admin" && (
-              <Link to="/admin" onClick={() => setOpen(false)} className="py-3 border-b border-border">
-                {t("nav.admin")}
-              </Link>
-            )}
+
+          <nav className="flex-1 overflow-y-auto px-6 py-4">
+            <ul className="divide-y divide-border">
+              {NAV_LINKS.map((l) => (
+                <li key={l.to}>
+                  <Link
+                    to={l.to}
+                    onClick={() => setOpen(false)}
+                    className="flex items-center justify-between py-5 font-display text-2xl text-foreground"
+                  >
+                    <span>{t(l.key)}</span>
+                    <span className="text-muted-foreground text-base">→</span>
+                  </Link>
+                </li>
+              ))}
+              <li>
+                <Link
+                  to="/cart"
+                  onClick={() => setOpen(false)}
+                  className="flex items-center justify-between py-5 font-display text-2xl text-foreground"
+                >
+                  <span>{t("nav.cart")}</span>
+                  <span className="text-muted-foreground text-base tabular-nums">{count}</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/account"
+                  onClick={() => setOpen(false)}
+                  className="flex items-center justify-between py-5 font-display text-2xl text-foreground"
+                >
+                  <span>{user ? user.name : t("nav.account")}</span>
+                  <span className="text-muted-foreground text-base">→</span>
+                </Link>
+              </li>
+              {user?.role === "admin" && (
+                <li>
+                  <Link
+                    to="/admin"
+                    onClick={() => setOpen(false)}
+                    className="flex items-center justify-between py-5 font-display text-2xl text-foreground"
+                  >
+                    <span>{t("nav.admin")}</span>
+                    <span className="text-muted-foreground text-base">→</span>
+                  </Link>
+                </li>
+              )}
+            </ul>
           </nav>
-          <div className="mt-auto px-6 py-6 flex items-center justify-between border-t border-border">
+
+          <div className="px-6 py-6 border-t border-border flex items-center justify-between bg-secondary/50">
             <button
               onClick={() => setLang(lang === "ru" ? "en" : "ru")}
-              className="uppercase tracking-widest text-xs hover-underline"
+              className="text-sm uppercase tracking-widest font-medium"
             >
               {lang === "ru" ? "English" : "Русский"}
             </button>
-            {user && (
+            {user ? (
               <button
                 onClick={async () => { await api.logout(); setOpen(false); router.invalidate(); }}
-                className="text-xs uppercase tracking-widest text-muted-foreground hover:text-foreground"
+                className="text-sm uppercase tracking-widest text-muted-foreground hover:text-foreground"
               >
                 {t("auth.logout")}
               </button>
+            ) : (
+              <Link
+                to="/account"
+                onClick={() => setOpen(false)}
+                className="text-sm uppercase tracking-widest font-medium"
+              >
+                {t("auth.login")}
+              </Link>
             )}
           </div>
         </aside>
