@@ -1,6 +1,8 @@
-import { Outlet, createRootRoute, HeadContent, Scripts, useRouterState } from "@tanstack/react-router";
+import { Outlet, createRootRoute, HeadContent, Scripts, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import appCss from "../styles.css?url";
 import { I18nProvider } from "@/lib/i18n";
+import { api } from "@/lib/api";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 
 export const Route = createRootRoute({
@@ -46,10 +48,28 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const navigate = useNavigate();
+  const [isAdminSession, setIsAdminSession] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
   const isAdmin = pathname.startsWith("/admin");
   // Главная имеет собственную «внутри-картинки» навигацию (стиль Rhode)
   const isHome = pathname === "/";
-  const hideChrome = isAdmin || isHome;
+  const hideChrome = isAdmin || isHome || isAdminSession || !authChecked;
+
+  useEffect(() => {
+    let alive = true;
+    api.me().then((user) => {
+      if (!alive) return;
+      const admin = user?.role === "admin";
+      setIsAdminSession(admin);
+      setAuthChecked(true);
+      if (admin && !pathname.startsWith("/admin")) {
+        navigate({ to: "/admin", replace: true });
+      }
+    });
+    return () => { alive = false; };
+  }, [navigate, pathname]);
+
   return (
     <I18nProvider>
       <div className="min-h-screen flex flex-col">
