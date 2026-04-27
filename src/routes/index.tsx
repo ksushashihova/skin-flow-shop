@@ -32,7 +32,7 @@ function Index() {
           <div className="absolute inset-0 bg-gradient-to-t from-foreground/30 via-transparent to-transparent" />
           <div className="absolute left-6 md:left-12 bottom-10 md:bottom-14 max-w-xl text-background fade-up">
             <div className="text-[11px] uppercase tracking-[0.3em] mb-4 opacity-90">
-              {t("hero.kicker") /* fallback ниже */ || "Новая коллекция"}
+              Новая коллекция
             </div>
             <h1 className="font-display text-4xl md:text-6xl leading-[1.05]">
               {t("hero.title")}
