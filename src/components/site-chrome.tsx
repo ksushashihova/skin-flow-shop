@@ -184,83 +184,94 @@ export function SiteHeader({ variant = "solid" }: { variant?: "solid" | "overlay
 
   const isOverlay = variant === "overlay";
 
-  const wrapperCls = isOverlay
-    ? "absolute top-0 left-0 right-0 z-40 text-background"
-    : "sticky top-0 z-40 bg-background/90 backdrop-blur border-b border-border text-foreground";
+  // Header всегда sticky с белой лого-строкой. На overlay nav-строка прозрачная и текст светлый.
+  const wrapperCls = "sticky top-0 z-40 text-foreground";
+  const logoBarCls = "bg-background/95 backdrop-blur";
+  const navBarCls = isOverlay
+    ? "text-background"
+    : "bg-background/95 backdrop-blur border-b border-border text-foreground";
 
   const linkCls = isOverlay
     ? "hover:opacity-70 transition-opacity"
     : "hover-underline";
 
-  const burgerColor = isOverlay ? "bg-background" : "bg-foreground";
-
   return (
     <header className={wrapperCls}>
-      <div className={isOverlay ? "px-5 md:px-10" : "container-rhode"}>
-        {/* MOBILE: одна строка с бургером, лого и корзиной */}
-        <div className="grid grid-cols-3 items-center h-16 md:hidden">
-          <div className="flex items-center">
-            <button
-              onClick={() => setOpen(true)}
-              aria-label="Меню"
-              className="flex flex-col gap-[5px] p-2 -ml-2"
-            >
-              <span className={`block w-5 h-px ${burgerColor}`} />
-              <span className={`block w-5 h-px ${burgerColor}`} />
-              <span className={`block w-5 h-px ${burgerColor}`} />
-            </button>
+      {/* MOBILE */}
+      <div className={`md:hidden ${logoBarCls} border-b border-border`}>
+        <div className="container-rhode">
+          <div className="grid grid-cols-3 items-center h-16">
+            <div className="flex items-center">
+              <button
+                onClick={() => setOpen(true)}
+                aria-label="Меню"
+                className="flex flex-col gap-[5px] p-2 -ml-2"
+              >
+                <span className="block w-5 h-px bg-foreground" />
+                <span className="block w-5 h-px bg-foreground" />
+                <span className="block w-5 h-px bg-foreground" />
+              </button>
+            </div>
+            <div className="flex justify-center">
+              <Link to="/" className="font-display text-xl tracking-tight whitespace-nowrap">
+                ОБЛАКО
+              </Link>
+            </div>
+            <div className="flex items-center justify-end gap-4 text-xs uppercase tracking-[0.2em]">
+              <Link to="/cart" className="flex items-center gap-1 hover-underline">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M6 7h12l-1 13H7L6 7z" />
+                  <path d="M9 7V5a3 3 0 0 1 6 0v2" />
+                </svg>
+                <span className="tabular-nums">({count})</span>
+              </Link>
+            </div>
           </div>
-          <div className="flex justify-center">
-            <Link to="/" className="font-display text-xl tracking-tight whitespace-nowrap">
+        </div>
+      </div>
+
+      {/* DESKTOP */}
+      <div className="hidden md:block">
+        {/* Лого-строка — всегда на белом */}
+        <div className={logoBarCls}>
+          <div className="container-rhode flex justify-center pt-5 pb-3">
+            <Link to="/" className="font-display text-2xl lg:text-3xl tracking-tight whitespace-nowrap text-foreground">
               ОБЛАКО
-            </Link>
-          </div>
-          <div className="flex items-center justify-end gap-4 text-xs uppercase tracking-[0.2em]">
-            <Link to="/cart" className={`flex items-center gap-1 ${linkCls}`}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M6 7h12l-1 13H7L6 7z" />
-                <path d="M9 7V5a3 3 0 0 1 6 0v2" />
-              </svg>
-              <span className="tabular-nums">({count})</span>
             </Link>
           </div>
         </div>
-
-        {/* DESKTOP: лого сверху, под ним nav + actions */}
-        <div className="hidden md:block">
-          <div className="flex justify-center pt-5 pb-2">
-            <Link to="/" className="font-display text-2xl lg:text-3xl tracking-tight whitespace-nowrap">
-              ОБЛАКО
-            </Link>
-          </div>
-          <div className="grid grid-cols-3 items-center h-12">
-            <nav className="flex items-center gap-7 text-xs uppercase tracking-[0.2em]">
-              {NAV_LINKS.slice(0, 5).map((l) => (
-                <Link key={l.to} to={l.to} className={linkCls} activeProps={{ className: "font-semibold" }}>
-                  {t(l.key)}
+        {/* Nav-строка — прозрачная на главной (overlay) */}
+        <div className={navBarCls}>
+          <div className={isOverlay ? "px-10" : "container-rhode"}>
+            <div className="grid grid-cols-3 items-center h-12">
+              <nav className="flex items-center gap-7 text-xs uppercase tracking-[0.2em]">
+                {NAV_LINKS.slice(0, 5).map((l) => (
+                  <Link key={l.to} to={l.to} className={linkCls} activeProps={{ className: "font-semibold" }}>
+                    {t(l.key)}
+                  </Link>
+                ))}
+              </nav>
+              <div />
+              <div className="flex items-center justify-end gap-6 text-xs uppercase tracking-[0.2em]">
+                <button
+                  onClick={() => setLang(lang === "ru" ? "en" : "ru")}
+                  className={linkCls}
+                >
+                  {lang === "ru" ? "EN" : "RU"}
+                </button>
+                {user?.role === "admin" && (
+                  <Link to="/admin" className={linkCls}>
+                    {t("nav.admin")}
+                  </Link>
+                )}
+                <Link to="/account" className={linkCls}>
+                  {user ? user.name.split(" ")[0] : t("nav.account")}
                 </Link>
-              ))}
-            </nav>
-            <div />
-            <div className="flex items-center justify-end gap-6 text-xs uppercase tracking-[0.2em]">
-              <button
-                onClick={() => setLang(lang === "ru" ? "en" : "ru")}
-                className={linkCls}
-              >
-                {lang === "ru" ? "EN" : "RU"}
-              </button>
-              {user?.role === "admin" && (
-                <Link to="/admin" className={linkCls}>
-                  {t("nav.admin")}
+                <Link to="/cart" className={`flex items-center gap-1 ${linkCls}`}>
+                  <span>{t("nav.cart")}</span>
+                  <span className="tabular-nums">({count})</span>
                 </Link>
-              )}
-              <Link to="/account" className={linkCls}>
-                {user ? user.name.split(" ")[0] : t("nav.account")}
-              </Link>
-              <Link to="/cart" className={`flex items-center gap-1 ${linkCls}`}>
-                <span>{t("nav.cart")}</span>
-                <span className="tabular-nums">({count})</span>
-              </Link>
+              </div>
             </div>
           </div>
         </div>

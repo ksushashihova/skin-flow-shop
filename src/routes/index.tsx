@@ -21,15 +21,16 @@ function Index() {
 
   return (
     <div>
-      {/* HERO — картинка под header, на десктопе с полями и скруглением */}
+      {/* HERO — на десктопе картинка заезжает под nav-строку, лого остаётся сверху */}
       <section className="relative">
-        <div className="px-0 md:px-6 pt-0 md:pt-4">
-          <div className="relative w-full h-[80vh] min-h-[560px] md:h-[78vh] md:min-h-[620px] overflow-hidden bg-muted md:rounded-3xl">
+        <div className="px-0 md:px-6 pt-0 md:-mt-12">
+          <div className="relative w-full h-[80vh] min-h-[560px] md:h-[82vh] md:min-h-[660px] overflow-hidden bg-muted md:rounded-3xl">
             <img
               src="https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=2200&q=80"
               alt=""
               className="absolute inset-0 w-full h-full object-cover"
             />
+            <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-foreground/45 to-transparent pointer-events-none md:rounded-t-3xl" />
             <div className="absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-foreground/40 to-transparent pointer-events-none md:rounded-b-3xl" />
 
             <div className="absolute left-6 md:left-12 bottom-12 md:bottom-16 max-w-xl text-background fade-up">
