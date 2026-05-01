@@ -173,6 +173,7 @@ function seedUsers(): (User & { passwordHash: string })[] {
       role: "admin",
       name: "Администратор",
       phone: "+7 999 000 00 00",
+      bonusBalance: 0,
       passwordHash: "admin123",
       createdAt: new Date().toISOString(),
     },
@@ -182,6 +183,7 @@ function seedUsers(): (User & { passwordHash: string })[] {
       role: "user",
       name: "Анна",
       phone: "+7 916 123 45 67",
+      bonusBalance: 250,
       passwordHash: "demo1234",
       createdAt: new Date().toISOString(),
     },
@@ -203,6 +205,8 @@ function seedOrders(): Order[] {
       paymentMethod: "card_online",
       deliveryMethod: "courier",
       deliveryPrice: 0,
+      bonusUsed: 0,
+      bonusEarned: 249,
       createdAt: new Date(Date.now() - 86400000 * 4).toISOString(),
       updatedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
     },
@@ -247,7 +251,7 @@ export const api = {
     if (s.users.find((u) => u.email === email)) throw new Error("Пользователь с таким email уже существует");
     const u = {
       id: "u_" + Math.random().toString(36).slice(2, 8),
-      email, role: "user" as Role, name, phone, passwordHash: password,
+      email, role: "user" as Role, name, phone, bonusBalance: 0, passwordHash: password,
       createdAt: new Date().toISOString(),
     };
     s.users.push(u);
