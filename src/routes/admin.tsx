@@ -1,6 +1,6 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { api, type Order, type OrderStatus, type User, type Product, type Post } from "@/lib/api";
+import { api, type Order, type OrderStatus, type User, type Product, type Post, type Review, type Bundle, type GiftCard, type Subscriber } from "@/lib/api";
 import { useI18n, formatPrice } from "@/lib/i18n";
 
 export const Route = createFileRoute("/admin")({
@@ -32,7 +32,7 @@ const DELIVERY_LABEL: Record<Order["deliveryMethod"], string> = {
   post: "Почта России",
 };
 
-type Tab = "orders" | "users" | "products" | "posts";
+type Tab = "orders" | "users" | "products" | "posts" | "reviews" | "bundles" | "gift" | "subs";
 
 type OrdersView =
   | { kind: "list" }
@@ -59,6 +59,10 @@ function Admin() {
     { id: "users", label: "Пользователи" },
     { id: "products", label: "Товары" },
     { id: "posts", label: "Журнал" },
+    { id: "reviews", label: "Отзывы" },
+    { id: "bundles", label: "Наборы" },
+    { id: "gift", label: "Сертификаты" },
+    { id: "subs", label: "Подписчики" },
   ];
 
   return (
@@ -94,6 +98,10 @@ function Admin() {
       {tab === "users" && <UsersPanel lang={lang} />}
       {tab === "products" && <ProductsPanel />}
       {tab === "posts" && <PostsPanel />}
+      {tab === "reviews" && <ReviewsPanel />}
+      {tab === "bundles" && <BundlesPanel />}
+      {tab === "gift" && <GiftCardsPanel lang={lang} />}
+      {tab === "subs" && <SubscribersPanel />}
     </div>
   );
 }
