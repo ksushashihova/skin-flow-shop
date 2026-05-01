@@ -126,6 +126,8 @@ function AccountPage() {
                         <div>Доставка: {DELIVERY_LABEL[o.deliveryMethod]} {o.deliveryPrice ? `· ${formatPrice(o.deliveryPrice, lang)}` : "· бесплатно"}</div>
                         <div>Оплата: {PAYMENT_LABEL[o.paymentMethod]}</div>
                         <div>Адрес: {o.address.city}, {o.address.addressLine}, {o.address.postalCode}</div>
+                        {o.bonusUsed > 0 && <div>Списано бонусов: −{o.bonusUsed}</div>}
+                        {o.bonusEarned > 0 && <div>Начислено бонусов: +{o.bonusEarned}</div>}
                       </div>
                       {cancellable && (
                         <button
