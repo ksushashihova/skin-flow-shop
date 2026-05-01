@@ -419,10 +419,13 @@ export const api = {
         const p = s.products.find((p) => p.id === it.productId);
         if (p) p.stock += it.quantity;
       }
+      const u = s.users.find((x) => x.id === o.userId);
+      if (u) u.bonusBalance = Math.max(0, u.bonusBalance - o.bonusEarned + o.bonusUsed);
     }
     o.status = "cancelled";
     o.updatedAt = new Date().toISOString();
     save(s);
+    emitAuthChange();
     return o;
   },
 
