@@ -117,7 +117,7 @@ export interface Post {
 import { PRODUCTS as SEED_PRODUCTS } from "./products";
 import { POSTS as SEED_POSTS } from "./posts";
 
-const LS_KEY = "demo_state_v3";
+const LS_KEY = "demo_state_v4";
 
 interface DemoState {
   users: (User & { passwordHash: string })[];
