@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { api, trackingStagesFor, trackingUrlFor, type Order, type User } from "@/lib/api";
+import { api, tierFor, TIERS, trackingStagesFor, trackingUrlFor, type Order, type User } from "@/lib/api";
 import { useI18n, formatPrice } from "@/lib/i18n";
 
 export const Route = createFileRoute("/account")({
@@ -67,8 +67,10 @@ function AccountPage() {
         <div className="mt-6 p-4 bg-secondary">
           <div className="text-xs uppercase tracking-widest text-muted-foreground mb-1">Бонусный счёт</div>
           <div className="font-display text-3xl tabular-nums">{user.bonusBalance}</div>
-          <div className="text-xs text-muted-foreground mt-1">Возврат 5% с каждого заказа</div>
+          <div className="text-xs text-muted-foreground mt-1">Возврат {Math.round(tierFor(user.totalSpent).rate * 100)}% с каждого заказа</div>
         </div>
+        <TierCard user={user} />
+
         <button
           onClick={async () => { await api.logout(); refresh(); }}
           className="mt-8 text-xs uppercase tracking-widest hover-underline"
