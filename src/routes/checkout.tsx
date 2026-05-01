@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { api, DELIVERY_PRICES, type CartItem, type DeliveryMethod, type PaymentMethod, type Product, type User } from "@/lib/api";
+import { api, DELIVERY_PRICES, tierFor, type Bundle, type CartItem, type DeliveryMethod, type PaymentMethod, type Product, type User } from "@/lib/api";
 import { useI18n, formatPrice } from "@/lib/i18n";
 
 export const Route = createFileRoute("/checkout")({
@@ -140,16 +140,35 @@ function Checkout() {
 
       <aside className="bg-secondary p-8 h-fit lg:sticky lg:top-24 space-y-4">
         <div className="font-display text-2xl mb-4">Ваш заказ</div>
+        {tier && (
+          <div className="text-xs uppercase tracking-widest text-muted-foreground border border-border px-3 py-2">
+            Уровень: <span className="text-foreground">{tier.label}</span> · {Math.round(tier.rate * 100)}% бонусов
+          </div>
+        )}
         <div className="space-y-3 text-sm">
           {items.map((i) => {
-            const p = products.find((pr) => pr.id === i.productId);
-            if (!p) return null;
-            return (
-              <div key={i.id} className="flex justify-between gap-4">
-                <span className="text-muted-foreground">{(lang === "ru" ? p.name_ru : p.name_en)} × {i.quantity}</span>
-                <span className="tabular-nums">{formatPrice(p.price * i.quantity, lang)}</span>
-              </div>
-            );
+            if (i.productId) {
+              const p = products.find((pr) => pr.id === i.productId);
+              if (!p) return null;
+              return (
+                <div key={i.id} className="flex justify-between gap-4">
+                  <span className="text-muted-foreground">{(lang === "ru" ? p.name_ru : p.name_en)} × {i.quantity}</span>
+                  <span className="tabular-nums">{formatPrice(p.price * i.quantity, lang)}</span>
+                </div>
+              );
+            }
+            if (i.bundleId) {
+              const b = bundles.find((bb) => bb.id === i.bundleId);
+              if (!b) return null;
+              const { discounted } = api.bundlePrice(b, products);
+              return (
+                <div key={i.id} className="flex justify-between gap-4">
+                  <span className="text-muted-foreground">Набор · {b.name} × {i.quantity}</span>
+                  <span className="tabular-nums">{formatPrice(discounted * i.quantity, lang)}</span>
+                </div>
+              );
+            }
+            return null;
           })}
         </div>
         <div className="border-t border-border pt-4 space-y-2 text-sm">
@@ -161,6 +180,29 @@ function Checkout() {
             <span className="text-muted-foreground">Доставка</span>
             <span className="tabular-nums">{deliveryPrice === 0 ? "Бесплатно" : formatPrice(deliveryPrice, lang)}</span>
           </div>
+
+          <div className="pt-2">
+            <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Промокод / сертификат</div>
+            <div className="flex gap-2">
+              <input
+                value={promoInput}
+                onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
+                placeholder="WELCOME10"
+                className="flex-1 border border-border bg-background px-3 py-2 text-sm outline-none focus:border-foreground"
+              />
+              <button type="button" onClick={applyPromo} className="px-3 py-2 text-xs uppercase tracking-widest border border-border hover:bg-foreground hover:text-background transition-colors">
+                Применить
+              </button>
+            </div>
+            {promoErr && <div className="text-xs text-destructive mt-1">{promoErr}</div>}
+            {promoApplied && (
+              <div className="flex justify-between mt-2 text-sm">
+                <span className="text-muted-foreground">Скидка ({promoApplied.code})</span>
+                <span className="tabular-nums">−{formatPrice(promoApplied.discount, lang)}</span>
+              </div>
+            )}
+          </div>
+
           {user && user.bonusBalance > 0 && (
             <div className="pt-2">
               <div className="flex justify-between mb-2">
@@ -177,11 +219,7 @@ function Checkout() {
                   className="flex-1 border border-border bg-background px-3 py-2 text-sm outline-none focus:border-foreground"
                   placeholder="0"
                 />
-                <button
-                  type="button"
-                  onClick={() => setBonusUse(maxBonus)}
-                  className="px-3 py-2 text-xs uppercase tracking-widest border border-border hover:bg-foreground hover:text-background transition-colors"
-                >
+                <button type="button" onClick={() => setBonusUse(maxBonus)} className="px-3 py-2 text-xs uppercase tracking-widest border border-border hover:bg-foreground hover:text-background transition-colors">
                   Все
                 </button>
               </div>

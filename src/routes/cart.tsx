@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { api, type CartItem, type Product } from "@/lib/api";
+import { api, type Bundle, type CartItem, type Product } from "@/lib/api";
 import { useI18n, formatPrice } from "@/lib/i18n";
 
 export const Route = createFileRoute("/cart")({
@@ -12,18 +12,42 @@ function CartPage() {
   const { t, lang } = useI18n();
   const [items, setItems] = useState<CartItem[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [bundles, setBundles] = useState<Bundle[]>([]);
 
   const load = async () => {
     setItems(await api.getCart());
     setProducts(await api.listProducts());
+    setBundles(await api.listBundles());
   };
   useEffect(() => { load(); }, []);
 
-  const detailed = items
-    .map((i) => ({ item: i, product: products.find((p) => p.id === i.productId) }))
-    .filter((x): x is { item: CartItem; product: Product } => !!x.product);
+  type Detailed =
+    | { kind: "product"; item: CartItem; name: string; image: string; price: number; slug: string }
+    | { kind: "bundle"; item: CartItem; name: string; image: string; price: number; slug: string };
+  const detailed: Detailed[] = items.flatMap((item): Detailed[] => {
+    if (item.productId) {
+      const p = products.find((x) => x.id === item.productId);
+      if (!p) return [];
+      return [{
+        kind: "product", item,
+        name: lang === "ru" ? p.name_ru : p.name_en,
+        image: p.images[0], price: p.price, slug: p.slug,
+      }];
+    }
+    if (item.bundleId) {
+      const b = bundles.find((x) => x.id === item.bundleId);
+      if (!b) return [];
+      const { discounted } = api.bundlePrice(b, products);
+      return [{
+        kind: "bundle", item,
+        name: `Набор · ${b.name}`,
+        image: b.cover, price: discounted, slug: b.slug,
+      }];
+    }
+    return [];
+  });
 
-  const total = detailed.reduce((s, { item, product }) => s + item.quantity * product.price, 0);
+  const total = detailed.reduce((s, d) => s + d.price * d.item.quantity, 0);
 
   if (items.length === 0) {
     return (
@@ -42,32 +66,31 @@ function CartPage() {
       <div>
         <h1 className="font-display text-5xl mb-10">{t("cart.title")}</h1>
         <ul className="divide-y divide-border">
-          {detailed.map(({ item, product }) => {
-            const name = lang === "ru" ? product.name_ru : product.name_en;
-            return (
-              <li key={item.id} className="py-6 flex gap-6">
-                <img src={product.images[0]} alt={name} className="w-28 h-32 object-cover" />
-                <div className="flex-1 flex flex-col justify-between">
-                  <div className="flex justify-between gap-4">
-                    <Link to="/product/$slug" params={{ slug: product.slug }} className="font-display text-xl hover-underline">
-                      {name}
-                    </Link>
-                    <div className="tabular-nums">{formatPrice(product.price * item.quantity, lang)}</div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex border border-border text-sm">
-                      <button onClick={() => api.updateCart(item.id, item.quantity - 1).then(setItems)} className="px-3 py-1">−</button>
-                      <span className="px-4 py-1 tabular-nums">{item.quantity}</span>
-                      <button onClick={() => api.updateCart(item.id, item.quantity + 1).then(setItems)} className="px-3 py-1">+</button>
-                    </div>
-                    <button onClick={() => api.removeFromCart(item.id).then(setItems)} className="text-xs uppercase tracking-widest text-muted-foreground hover:text-destructive">
-                      Удалить
-                    </button>
-                  </div>
+          {detailed.map((d) => (
+            <li key={d.item.id} className="py-6 flex gap-6">
+              <img src={d.image} alt={d.name} className="w-28 h-32 object-cover" />
+              <div className="flex-1 flex flex-col justify-between">
+                <div className="flex justify-between gap-4">
+                  {d.kind === "product" ? (
+                    <Link to="/product/$slug" params={{ slug: d.slug }} className="font-display text-xl hover-underline">{d.name}</Link>
+                  ) : (
+                    <Link to="/bundles/$slug" params={{ slug: d.slug }} className="font-display text-xl hover-underline">{d.name}</Link>
+                  )}
+                  <div className="tabular-nums">{formatPrice(d.price * d.item.quantity, lang)}</div>
                 </div>
-              </li>
-            );
-          })}
+                <div className="flex items-center justify-between">
+                  <div className="flex border border-border text-sm">
+                    <button onClick={() => api.updateCart(d.item.id, d.item.quantity - 1).then(setItems)} className="px-3 py-1">−</button>
+                    <span className="px-4 py-1 tabular-nums">{d.item.quantity}</span>
+                    <button onClick={() => api.updateCart(d.item.id, d.item.quantity + 1).then(setItems)} className="px-3 py-1">+</button>
+                  </div>
+                  <button onClick={() => api.removeFromCart(d.item.id).then(setItems)} className="text-xs uppercase tracking-widest text-muted-foreground hover:text-destructive">
+                    Удалить
+                  </button>
+                </div>
+              </div>
+            </li>
+          ))}
         </ul>
       </div>
       <aside className="bg-secondary p-8 h-fit">
