@@ -44,8 +44,11 @@ export interface User {
   role: Role;
   name: string;
   phone?: string;
+  bonusBalance: number;
   createdAt: string;
 }
+
+export const BONUS_RATE = 0.05; // 5% возврата с каждого заказа
 
 export interface Product {
   id: string;
@@ -87,6 +90,8 @@ export interface Order {
   paymentMethod: PaymentMethod;
   deliveryMethod: DeliveryMethod;
   deliveryPrice: number;
+  bonusUsed: number;
+  bonusEarned: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -112,7 +117,7 @@ export interface Post {
 import { PRODUCTS as SEED_PRODUCTS } from "./products";
 import { POSTS as SEED_POSTS } from "./posts";
 
-const LS_KEY = "demo_state_v3";
+const LS_KEY = "demo_state_v4";
 
 interface DemoState {
   users: (User & { passwordHash: string })[];
@@ -168,6 +173,7 @@ function seedUsers(): (User & { passwordHash: string })[] {
       role: "admin",
       name: "Администратор",
       phone: "+7 999 000 00 00",
+      bonusBalance: 0,
       passwordHash: "admin123",
       createdAt: new Date().toISOString(),
     },
@@ -177,6 +183,7 @@ function seedUsers(): (User & { passwordHash: string })[] {
       role: "user",
       name: "Анна",
       phone: "+7 916 123 45 67",
+      bonusBalance: 250,
       passwordHash: "demo1234",
       createdAt: new Date().toISOString(),
     },
@@ -198,6 +205,8 @@ function seedOrders(): Order[] {
       paymentMethod: "card_online",
       deliveryMethod: "courier",
       deliveryPrice: 0,
+      bonusUsed: 0,
+      bonusEarned: 249,
       createdAt: new Date(Date.now() - 86400000 * 4).toISOString(),
       updatedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
     },
@@ -242,7 +251,7 @@ export const api = {
     if (s.users.find((u) => u.email === email)) throw new Error("Пользователь с таким email уже существует");
     const u = {
       id: "u_" + Math.random().toString(36).slice(2, 8),
-      email, role: "user" as Role, name, phone, passwordHash: password,
+      email, role: "user" as Role, name, phone, bonusBalance: 0, passwordHash: password,
       createdAt: new Date().toISOString(),
     };
     s.users.push(u);
@@ -338,6 +347,7 @@ export const api = {
     paymentMethod: PaymentMethod,
     deliveryMethod: DeliveryMethod,
     consent: boolean,
+    bonusUse: number = 0,
   ): Promise<Order> {
     await delay(350);
     if (!consent) throw new Error("Необходимо согласие на обработку персональных данных");
@@ -349,34 +359,41 @@ export const api = {
       const p = s.products.find((p) => p.id === c.productId)!;
       return { productId: p.id, name: p.name_ru, quantity: c.quantity, price: p.price, image: p.images[0] };
     });
-    // проверка остатков
     for (const it of items) {
       const p = s.products.find((p) => p.id === it.productId)!;
       if (it.quantity > p.stock) throw new Error(`Недостаточно "${p.name_ru}": доступно ${p.stock}`);
     }
-    // списание остатков
     for (const it of items) {
       const p = s.products.find((p) => p.id === it.productId)!;
       p.stock = Math.max(0, p.stock - it.quantity);
     }
     const deliveryPrice = DELIVERY_PRICES[deliveryMethod];
+    const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+    const maxBonus = Math.min(user.bonusBalance, Math.floor(subtotal * 0.5));
+    const bonusUsed = Math.max(0, Math.min(bonusUse, maxBonus));
+    const totalPrice = Math.max(0, subtotal + deliveryPrice - bonusUsed);
+    const bonusEarned = Math.round((subtotal - bonusUsed) * BONUS_RATE);
+    user.bonusBalance = user.bonusBalance - bonusUsed + bonusEarned;
     const order: Order = {
       id: "o_" + Date.now().toString(36),
       userId: user.id,
       userEmail: user.email,
       status: "new",
-      totalPrice: items.reduce((sum, i) => sum + i.price * i.quantity, 0) + deliveryPrice,
+      totalPrice,
       items,
       address,
       paymentMethod,
       deliveryMethod,
       deliveryPrice,
+      bonusUsed,
+      bonusEarned,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
     s.orders.unshift(order);
     s.cart = [];
     save(s);
+    emitAuthChange();
     console.info("[demo] email подтверждения отправлен на", user.email);
     return order;
   },
@@ -402,10 +419,13 @@ export const api = {
         const p = s.products.find((p) => p.id === it.productId);
         if (p) p.stock += it.quantity;
       }
+      const u = s.users.find((x) => x.id === o.userId);
+      if (u) u.bonusBalance = Math.max(0, u.bonusBalance - o.bonusEarned + o.bonusUsed);
     }
     o.status = "cancelled";
     o.updatedAt = new Date().toISOString();
     save(s);
+    emitAuthChange();
     return o;
   },
 

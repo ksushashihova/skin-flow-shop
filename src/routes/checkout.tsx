@@ -34,6 +34,7 @@ function Checkout() {
   const [consent, setConsent] = useState(false);
   const [items, setItems] = useState<CartItem[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [bonusUse, setBonusUse] = useState(0);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -48,7 +49,9 @@ function Checkout() {
     return s + (p ? p.price * i.quantity : 0);
   }, 0);
   const deliveryPrice = DELIVERY_PRICES[delivery];
-  const total = subtotal + deliveryPrice;
+  const maxBonus = Math.min(user?.bonusBalance ?? 0, Math.floor(subtotal * 0.5));
+  const appliedBonus = Math.max(0, Math.min(bonusUse, maxBonus));
+  const total = Math.max(0, subtotal + deliveryPrice - appliedBonus);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,6 +67,7 @@ function Checkout() {
         payment,
         delivery,
         consent,
+        appliedBonus,
       );
       nav({ to: "/account", search: { orderId: order.id } as never });
     } catch (e) {
@@ -157,6 +161,33 @@ function Checkout() {
             <span className="text-muted-foreground">Доставка</span>
             <span className="tabular-nums">{deliveryPrice === 0 ? "Бесплатно" : formatPrice(deliveryPrice, lang)}</span>
           </div>
+          {user && user.bonusBalance > 0 && (
+            <div className="pt-2">
+              <div className="flex justify-between mb-2">
+                <span className="text-muted-foreground">Бонусы (доступно {user.bonusBalance})</span>
+                <span className="tabular-nums text-muted-foreground">−{appliedBonus}</span>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  min={0}
+                  max={maxBonus}
+                  value={bonusUse}
+                  onChange={(e) => setBonusUse(Math.max(0, Math.min(Number(e.target.value) || 0, maxBonus)))}
+                  className="flex-1 border border-border bg-background px-3 py-2 text-sm outline-none focus:border-foreground"
+                  placeholder="0"
+                />
+                <button
+                  type="button"
+                  onClick={() => setBonusUse(maxBonus)}
+                  className="px-3 py-2 text-xs uppercase tracking-widest border border-border hover:bg-foreground hover:text-background transition-colors"
+                >
+                  Все
+                </button>
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">Можно списать до {maxBonus} бонусов (50% от товаров)</div>
+            </div>
+          )}
           <div className="flex justify-between font-display text-xl pt-2">
             <span>Итого</span>
             <span className="tabular-nums">{formatPrice(total, lang)}</span>

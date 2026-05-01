@@ -7,6 +7,7 @@ const NAV_LINKS = [
   { to: "/shop" as const, key: "nav.shop" as const },
   { to: "/about" as const, key: "nav.about" as const },
   { to: "/journal" as const, key: "nav.journal" as const },
+  { to: "/faq" as const, key: "nav.faq" as const },
 ];
 
 function useChrome() {
@@ -287,6 +288,7 @@ export function SiteFooter() {
         <div>
           <div className="uppercase text-xs tracking-widest mb-3 text-muted-foreground">Помощь</div>
           <ul className="space-y-2">
+            <li><Link to="/faq" className="hover-underline">Вопросы и ответы</Link></li>
             <li><Link to="/account" className="hover-underline">Личный кабинет</Link></li>
             <li><Link to="/privacy" className="hover-underline">Политика конфиденциальности</Link></li>
           </ul>

@@ -64,6 +64,11 @@ function AccountPage() {
         <div className="font-display text-3xl mb-2">{user.name}</div>
         <div className="text-sm text-muted-foreground">{user.email}</div>
         {user.phone && <div className="text-sm text-muted-foreground">{user.phone}</div>}
+        <div className="mt-6 p-4 bg-secondary">
+          <div className="text-xs uppercase tracking-widest text-muted-foreground mb-1">Бонусный счёт</div>
+          <div className="font-display text-3xl tabular-nums">{user.bonusBalance}</div>
+          <div className="text-xs text-muted-foreground mt-1">Возврат 5% с каждого заказа</div>
+        </div>
         <button
           onClick={async () => { await api.logout(); refresh(); }}
           className="mt-8 text-xs uppercase tracking-widest hover-underline"
@@ -121,6 +126,8 @@ function AccountPage() {
                         <div>Доставка: {DELIVERY_LABEL[o.deliveryMethod]} {o.deliveryPrice ? `· ${formatPrice(o.deliveryPrice, lang)}` : "· бесплатно"}</div>
                         <div>Оплата: {PAYMENT_LABEL[o.paymentMethod]}</div>
                         <div>Адрес: {o.address.city}, {o.address.addressLine}, {o.address.postalCode}</div>
+                        {o.bonusUsed > 0 && <div>Списано бонусов: −{o.bonusUsed}</div>}
+                        {o.bonusEarned > 0 && <div>Начислено бонусов: +{o.bonusEarned}</div>}
                       </div>
                       {cancellable && (
                         <button
