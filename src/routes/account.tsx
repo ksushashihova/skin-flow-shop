@@ -204,6 +204,26 @@ function TrackingTimeline({ order }: { order: Order }) {
   );
 }
 
+function TierCard({ user }: { user: User }) {
+  const current = tierFor(user.totalSpent);
+  const next = TIERS.find((t) => t.min > user.totalSpent);
+  const remaining = next ? Math.max(0, next.min - user.totalSpent) : 0;
+  return (
+    <div className="mt-4 p-4 border border-border">
+      <div className="text-xs uppercase tracking-widest text-muted-foreground mb-1">Уровень</div>
+      <div className="font-display text-2xl">{current.label}</div>
+      <ul className="text-xs text-muted-foreground mt-2 space-y-1">
+        {current.perks.map((p) => <li key={p}>· {p}</li>)}
+      </ul>
+      {next && (
+        <div className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border">
+          До <span className="text-foreground">{next.label}</span> — ещё {new Intl.NumberFormat("ru-RU").format(remaining)} ₽
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ProfileForm({ user, onSaved }: { user: User; onSaved: (u: User) => void }) {
   const [name, setName] = useState(user.name);
   const [phone, setPhone] = useState(user.phone ?? "");
