@@ -64,6 +64,11 @@ function AccountPage() {
         <div className="font-display text-3xl mb-2">{user.name}</div>
         <div className="text-sm text-muted-foreground">{user.email}</div>
         {user.phone && <div className="text-sm text-muted-foreground">{user.phone}</div>}
+        <div className="mt-6 p-4 bg-secondary">
+          <div className="text-xs uppercase tracking-widest text-muted-foreground mb-1">Бонусный счёт</div>
+          <div className="font-display text-3xl tabular-nums">{user.bonusBalance}</div>
+          <div className="text-xs text-muted-foreground mt-1">Возврат 5% с каждого заказа</div>
+        </div>
         <button
           onClick={async () => { await api.logout(); refresh(); }}
           className="mt-8 text-xs uppercase tracking-widest hover-underline"
