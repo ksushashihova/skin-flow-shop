@@ -153,7 +153,54 @@ function AccountPage() {
   );
 }
 
-function ProfileForm({ user, onSaved }: { user: User; onSaved: (u: User) => void }) {
+function TrackingTimeline({ order }: { order: Order }) {
+  const stages = trackingStagesFor(order);
+  const trackUrl = trackingUrlFor(order);
+  const eta = order.estimatedDelivery
+    ? new Date(order.estimatedDelivery).toLocaleDateString("ru-RU", { day: "numeric", month: "long" })
+    : null;
+  return (
+    <div className="border-b border-border pb-6">
+      <div className="flex flex-wrap gap-4 justify-between items-baseline mb-5">
+        <div className="text-xs uppercase tracking-widest text-muted-foreground">Отслеживание</div>
+        {order.trackingNumber && (
+          <div className="text-xs">
+            <span className="text-muted-foreground">Трек: </span>
+            {trackUrl ? (
+              <a href={trackUrl} target="_blank" rel="noreferrer" className="font-medium hover-underline tabular-nums">
+                {order.trackingNumber}
+              </a>
+            ) : (
+              <span className="font-medium tabular-nums">{order.trackingNumber}</span>
+            )}
+          </div>
+        )}
+      </div>
+      <ol className="grid grid-cols-4 gap-2">
+        {stages.map((st, i) => (
+          <li key={st.key} className="text-center">
+            <div className="relative flex items-center justify-center h-6 mb-2">
+              {i > 0 && (
+                <span className={`absolute left-0 right-1/2 top-1/2 h-px ${stages[i - 1].done ? "bg-foreground" : "bg-border"}`} />
+              )}
+              {i < stages.length - 1 && (
+                <span className={`absolute left-1/2 right-0 top-1/2 h-px ${st.done ? "bg-foreground" : "bg-border"}`} />
+              )}
+              <span className={`relative z-10 w-3 h-3 rounded-full ${st.done ? "bg-foreground" : "bg-background border border-border"}`} />
+            </div>
+            <div className={`text-[11px] uppercase tracking-widest ${st.done ? "text-foreground" : "text-muted-foreground"}`}>
+              {st.label}
+            </div>
+            {st.date && <div className="text-[10px] text-muted-foreground mt-1">{st.date}</div>}
+          </li>
+        ))}
+      </ol>
+      {eta && order.status !== "completed" && (
+        <div className="text-xs text-muted-foreground mt-4">Ожидаемая доставка: <span className="text-foreground">{eta}</span></div>
+      )}
+    </div>
+  );
+}
   const [name, setName] = useState(user.name);
   const [phone, setPhone] = useState(user.phone ?? "");
   const [saved, setSaved] = useState(false);
