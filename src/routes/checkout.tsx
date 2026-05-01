@@ -35,6 +35,10 @@ function Checkout() {
   const [items, setItems] = useState<CartItem[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [bonusUse, setBonusUse] = useState(0);
+  const [bundles, setBundles] = useState<Bundle[]>([]);
+  const [promoInput, setPromoInput] = useState("");
+  const [promoApplied, setPromoApplied] = useState<{ code: string; discount: number } | null>(null);
+  const [promoErr, setPromoErr] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -42,16 +46,50 @@ function Checkout() {
     api.me().then(setUser);
     api.getCart().then(setItems);
     api.listProducts().then(setProducts);
+    api.listBundles().then(setBundles);
   }, []);
 
+  const tier = user ? tierFor(user.totalSpent) : null;
   const subtotal = items.reduce((s, i) => {
-    const p = products.find((p) => p.id === i.productId);
-    return s + (p ? p.price * i.quantity : 0);
+    if (i.productId) {
+      const p = products.find((p) => p.id === i.productId);
+      return s + (p ? p.price * i.quantity : 0);
+    }
+    if (i.bundleId) {
+      const b = bundles.find((bb) => bb.id === i.bundleId);
+      if (!b) return s;
+      const { discounted } = api.bundlePrice(b, products);
+      return s + discounted * i.quantity;
+    }
+    return s;
   }, 0);
-  const deliveryPrice = DELIVERY_PRICES[delivery];
-  const maxBonus = Math.min(user?.bonusBalance ?? 0, Math.floor(subtotal * 0.5));
+  const baseDelivery = DELIVERY_PRICES[delivery];
+  const deliveryPrice = tier?.id === "platinum" ? 0 : baseDelivery;
+  const promoDiscount = promoApplied?.discount ?? 0;
+  const afterPromo = Math.max(0, subtotal - promoDiscount);
+  const maxBonus = Math.min(user?.bonusBalance ?? 0, Math.floor(afterPromo * 0.5));
   const appliedBonus = Math.max(0, Math.min(bonusUse, maxBonus));
-  const total = Math.max(0, subtotal + deliveryPrice - appliedBonus);
+  const total = Math.max(0, afterPromo + deliveryPrice - appliedBonus);
+
+  // re-validate promo when subtotal changes
+  useEffect(() => {
+    if (!promoApplied || subtotal === 0) return;
+    api.checkPromo(promoApplied.code, subtotal)
+      .then((r) => setPromoApplied({ code: r.promo.code, discount: r.discount }))
+      .catch(() => { setPromoApplied(null); setPromoErr(null); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subtotal]);
+
+  const applyPromo = async () => {
+    setPromoErr(null);
+    try {
+      const r = await api.checkPromo(promoInput, subtotal);
+      setPromoApplied({ code: r.promo.code, discount: r.discount });
+    } catch (e) {
+      setPromoApplied(null);
+      setPromoErr((e as Error).message);
+    }
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,6 +106,7 @@ function Checkout() {
         delivery,
         consent,
         appliedBonus,
+        promoApplied?.code,
       );
       nav({ to: "/account", search: { orderId: order.id } as never });
     } catch (e) {
