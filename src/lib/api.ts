@@ -44,8 +44,11 @@ export interface User {
   role: Role;
   name: string;
   phone?: string;
+  bonusBalance: number;
   createdAt: string;
 }
+
+export const BONUS_RATE = 0.05; // 5% возврата с каждого заказа
 
 export interface Product {
   id: string;
@@ -87,6 +90,8 @@ export interface Order {
   paymentMethod: PaymentMethod;
   deliveryMethod: DeliveryMethod;
   deliveryPrice: number;
+  bonusUsed: number;
+  bonusEarned: number;
   createdAt: string;
   updatedAt: string;
 }
