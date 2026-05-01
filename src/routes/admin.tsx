@@ -540,6 +540,18 @@ function ProductForm({
             className="w-full bg-background border border-border px-3 py-3"
           />
         </div>
+        <Field label="Видео-обзор (URL)" value={data.videoUrl ?? ""} onChange={(v) => set("videoUrl", v)} />
+        <div />
+        <div className="md:col-span-2">
+          <label className="block text-xs uppercase tracking-widest text-muted-foreground mb-2">Как использовать</label>
+          <textarea
+            value={data.howToUse ?? ""}
+            onChange={(e) => set("howToUse", e.target.value)}
+            rows={3}
+            className="w-full bg-background border border-border px-3 py-3"
+            placeholder="Нанесите утром и вечером на очищенную кожу..."
+          />
+        </div>
       </div>
       <div className="flex gap-3 mt-8">
         <button
