@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { api, type Order, type User } from "@/lib/api";
+import { api, trackingStagesFor, trackingUrlFor, type Order, type User } from "@/lib/api";
 import { useI18n, formatPrice } from "@/lib/i18n";
 
 export const Route = createFileRoute("/account")({
@@ -108,9 +108,12 @@ function AccountPage() {
                   </button>
                   {isOpen && (
                     <div className="mt-6 bg-secondary p-6 space-y-6">
+                      {o.status !== "cancelled" && (
+                        <TrackingTimeline order={o} />
+                      )}
                       <ul className="space-y-4">
                         {o.items.map((it) => (
-                          <li key={it.productId} className="flex gap-4">
+                          <li key={it.productId + it.name} className="flex gap-4">
                             {it.image && <img src={it.image} alt="" className="w-16 h-20 object-cover" />}
                             <div className="flex-1 flex justify-between text-sm">
                               <div>
@@ -128,6 +131,7 @@ function AccountPage() {
                         <div>Адрес: {o.address.city}, {o.address.addressLine}, {o.address.postalCode}</div>
                         {o.bonusUsed > 0 && <div>Списано бонусов: −{o.bonusUsed}</div>}
                         {o.bonusEarned > 0 && <div>Начислено бонусов: +{o.bonusEarned}</div>}
+                        {o.promoUsed && <div>Промокод/сертификат: {o.promoUsed} (−{formatPrice(o.promoDiscount, lang)})</div>}
                       </div>
                       {cancellable && (
                         <button
