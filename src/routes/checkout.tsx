@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { api, DELIVERY_PRICES, type CartItem, type DeliveryMethod, type PaymentMethod, type Product, type User } from "@/lib/api";
+import { api, DELIVERY_PRICES, tierFor, type Bundle, type CartItem, type DeliveryMethod, type PaymentMethod, type Product, type User } from "@/lib/api";
 import { useI18n, formatPrice } from "@/lib/i18n";
 
 export const Route = createFileRoute("/checkout")({
