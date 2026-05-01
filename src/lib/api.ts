@@ -634,12 +634,8 @@ export const api = {
       }
       const u = s.users.find((x) => x.id === o.userId);
       if (u) {
-        // Возвращаем списанные бонусы
+        // Возвращаем списанные бонусы (начисление ещё не было — completed уже отсечён выше)
         u.bonusBalance += o.bonusUsed;
-        // Если бонусы уже были начислены (заказ был completed) — снимаем
-        if (o.status === "completed" && o.bonusEarned > 0) {
-          u.bonusBalance = Math.max(0, u.bonusBalance - o.bonusEarned);
-        }
         u.totalSpent = Math.max(0, u.totalSpent - o.totalPrice);
       }
     }
