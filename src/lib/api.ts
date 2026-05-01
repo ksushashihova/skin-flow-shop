@@ -829,4 +829,30 @@ export const api = {
     return { subscriber: sub, promo };
   },
   async adminListSubscribers(): Promise<Subscriber[]> { return load().subscribers; },
+
+  // -------- promos CRUD --------
+  async adminListPromos(): Promise<PromoCode[]> { return load().promos; },
+  async adminCreatePromo(input: PromoCode): Promise<PromoCode> {
+    const s = load();
+    const code = input.code.trim().toUpperCase();
+    if (!code) throw new Error("Код промокода обязателен");
+    if (s.promos.find((p) => p.code === code)) throw new Error("Промокод с таким кодом уже существует");
+    if (!input.percent && !input.amount) throw new Error("Укажите процент или фиксированную сумму");
+    const promo: PromoCode = {
+      code,
+      percent: input.percent || undefined,
+      amount: input.amount || undefined,
+      description: input.description || `Скидка ${input.percent ? input.percent + "%" : input.amount + " ₽"}`,
+      usesLeft: input.usesLeft,
+    };
+    s.promos.unshift(promo);
+    save(s);
+    return promo;
+  },
+  async adminDeletePromo(code: string): Promise<{ ok: true }> {
+    const s = load();
+    s.promos = s.promos.filter((p) => p.code !== code);
+    save(s);
+    return { ok: true };
+  },
 };
