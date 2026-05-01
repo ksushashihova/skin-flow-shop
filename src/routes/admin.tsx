@@ -1,6 +1,6 @@
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { api, type Order, type OrderStatus, type User, type Product, type Post, type Review, type Bundle, type GiftCard, type Subscriber } from "@/lib/api";
+import { api, type Order, type OrderStatus, type User, type Product, type Post, type Review, type Bundle, type GiftCard, type Subscriber, type PromoCode } from "@/lib/api";
 import { useI18n, formatPrice } from "@/lib/i18n";
 
 export const Route = createFileRoute("/admin")({
@@ -32,7 +32,7 @@ const DELIVERY_LABEL: Record<Order["deliveryMethod"], string> = {
   post: "Почта России",
 };
 
-type Tab = "orders" | "users" | "products" | "posts" | "reviews" | "bundles" | "gift" | "subs";
+type Tab = "orders" | "users" | "products" | "posts" | "reviews" | "bundles" | "gift" | "promos" | "subs";
 
 type OrdersView =
   | { kind: "list" }
@@ -45,7 +45,6 @@ type UsersView =
 
 function Admin() {
   const { lang } = useI18n();
-  const router = useRouter();
   const [me, setMe] = useState<User | null>(null);
   const [tab, setTab] = useState<Tab>("orders");
 
@@ -62,6 +61,7 @@ function Admin() {
     { id: "reviews", label: "Отзывы" },
     { id: "bundles", label: "Наборы" },
     { id: "gift", label: "Сертификаты" },
+    { id: "promos", label: "Промокоды" },
     { id: "subs", label: "Подписчики" },
   ];
 
@@ -73,7 +73,7 @@ function Admin() {
           <h1 className="font-display text-4xl md:text-5xl">ОБЛАКО · Admin</h1>
         </div>
         <button
-          onClick={async () => { await api.logout(); router.navigate({ to: "/" }); }}
+          onClick={async () => { await api.logout(); window.location.href = "/"; }}
           className="text-xs uppercase tracking-widest border border-foreground px-5 py-3 hover:bg-foreground hover:text-background transition-colors"
         >
           Выйти
@@ -101,6 +101,7 @@ function Admin() {
       {tab === "reviews" && <ReviewsPanel />}
       {tab === "bundles" && <BundlesPanel />}
       {tab === "gift" && <GiftCardsPanel lang={lang} />}
+      {tab === "promos" && <PromosPanel lang={lang} />}
       {tab === "subs" && <SubscribersPanel />}
     </div>
   );
@@ -945,6 +946,95 @@ function SubscribersPanel() {
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+/* ----------------------------- PROMOS ----------------------------- */
+
+function PromosPanel({ lang }: { lang: "ru" | "en" }) {
+  const [promos, setPromos] = useState<PromoCode[]>([]);
+  const [code, setCode] = useState("");
+  const [percent, setPercent] = useState("");
+  const [amount, setAmount] = useState("");
+  const [description, setDescription] = useState("");
+  const [usesLeft, setUsesLeft] = useState("");
+  const [err, setErr] = useState<string | null>(null);
+
+  const refresh = async () => setPromos(await api.adminListPromos());
+  useEffect(() => { refresh(); }, []);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErr(null);
+    try {
+      await api.adminCreatePromo({
+        code,
+        percent: percent ? Number(percent) : undefined,
+        amount: amount ? Number(amount) : undefined,
+        description,
+        usesLeft: usesLeft ? Number(usesLeft) : undefined,
+      });
+      setCode(""); setPercent(""); setAmount(""); setDescription(""); setUsesLeft("");
+      refresh();
+    } catch (e) {
+      setErr((e as Error).message);
+    }
+  };
+
+  const fmt = (n: number) => new Intl.NumberFormat(lang === "ru" ? "ru-RU" : "en-US").format(n);
+
+  return (
+    <div>
+      <div className="text-xs uppercase tracking-widest text-muted-foreground mb-4">Промокоды · {promos.length}</div>
+
+      <form onSubmit={submit} className="bg-secondary p-6 mb-8 grid md:grid-cols-5 gap-4">
+        <Field label="Код" value={code} onChange={(v) => setCode(v.toUpperCase())} />
+        <Field label="Скидка %" type="number" value={percent} onChange={setPercent} />
+        <Field label="Скидка ₽" type="number" value={amount} onChange={setAmount} />
+        <Field label="Использований" type="number" value={usesLeft} onChange={setUsesLeft} />
+        <Field label="Описание" value={description} onChange={setDescription} />
+        <div className="md:col-span-5 flex items-center gap-4">
+          <button type="submit" className="text-xs uppercase tracking-widest bg-foreground text-background px-6 py-3">+ Добавить промокод</button>
+          {err && <span className="text-xs text-destructive">{err}</span>}
+        </div>
+      </form>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[640px]">
+          <thead className="text-xs uppercase tracking-widest text-muted-foreground border-b border-border">
+            <tr>
+              <th className="text-left py-3">Код</th>
+              <th className="text-left">Скидка</th>
+              <th className="text-left">Описание</th>
+              <th className="text-left">Осталось</th>
+              <th className="text-right">Действие</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {promos.length === 0 && <tr><td colSpan={5} className="py-6 text-center text-muted-foreground">Промокодов пока нет</td></tr>}
+            {promos.map((p) => (
+              <tr key={p.code}>
+                <td className="py-4 font-mono">{p.code}</td>
+                <td className="tabular-nums">
+                  {p.percent ? `${p.percent}%` : null}
+                  {p.amount ? `${fmt(p.amount)} ₽` : null}
+                </td>
+                <td className="text-muted-foreground">{p.description}</td>
+                <td className="tabular-nums">{p.usesLeft ?? "∞"}</td>
+                <td className="text-right">
+                  <button
+                    onClick={async () => { if (confirm(`Удалить промокод ${p.code}?`)) { await api.adminDeletePromo(p.code); refresh(); } }}
+                    className="text-xs uppercase tracking-widest text-destructive hover:opacity-70"
+                  >
+                    Удалить
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

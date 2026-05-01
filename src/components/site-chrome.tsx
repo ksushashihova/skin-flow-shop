@@ -1,4 +1,4 @@
-import { Link, useRouter } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { api, type User } from "@/lib/api";
@@ -37,7 +37,6 @@ function MobileDrawer({
   variant?: "dark" | "light";
 }) {
   const { t, lang, setLang } = useI18n();
-  const router = useRouter();
 
   useEffect(() => {
     if (open) document.body.style.overflow = "hidden";
@@ -122,7 +121,7 @@ function MobileDrawer({
           </button>
           {user ? (
             <button
-              onClick={async () => { await api.logout(); onClose(); router.invalidate(); }}
+              onClick={async () => { await api.logout(); window.location.href = "/"; }}
               className="text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-foreground"
             >
               {t("auth.logout")}

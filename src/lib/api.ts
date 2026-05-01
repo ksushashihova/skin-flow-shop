@@ -587,8 +587,10 @@ export const api = {
     const maxBonus = Math.min(user.bonusBalance, Math.floor(afterPromo * 0.5));
     const bonusUsed = Math.max(0, Math.min(bonusUse, maxBonus));
     const totalPrice = Math.max(0, afterPromo + deliveryPrice - bonusUsed);
+    // Бонусы НЕ начисляются сразу — только после доставки заказа.
+    // Списание бонусов происходит сразу при оформлении.
     const bonusEarned = Math.round((afterPromo - bonusUsed) * tier.rate);
-    user.bonusBalance = user.bonusBalance - bonusUsed + bonusEarned;
+    user.bonusBalance = Math.max(0, user.bonusBalance - bonusUsed);
     user.totalSpent += totalPrice;
 
     const order: Order = {
@@ -632,7 +634,8 @@ export const api = {
       }
       const u = s.users.find((x) => x.id === o.userId);
       if (u) {
-        u.bonusBalance = Math.max(0, u.bonusBalance - o.bonusEarned + o.bonusUsed);
+        // Возвращаем списанные бонусы (начисление ещё не было — completed уже отсечён выше)
+        u.bonusBalance += o.bonusUsed;
         u.totalSpent = Math.max(0, u.totalSpent - o.totalPrice);
       }
     }
@@ -651,9 +654,22 @@ export const api = {
     const s = load();
     const o = s.orders.find((x) => x.id === id);
     if (!o) throw new Error("Заказ не найден");
+    const prev = o.status;
     o.status = status;
     o.updatedAt = new Date().toISOString();
+    const u = s.users.find((x) => x.id === o.userId);
+    if (u) {
+      // Начисляем бонусы только при первом переходе в "completed" (получен)
+      if (status === "completed" && prev !== "completed" && o.bonusEarned > 0) {
+        u.bonusBalance += o.bonusEarned;
+      }
+      // Если откатываем completed -> другой статус — снимаем начисленные бонусы
+      if (prev === "completed" && status !== "completed" && o.bonusEarned > 0) {
+        u.bonusBalance = Math.max(0, u.bonusBalance - o.bonusEarned);
+      }
+    }
     save(s);
+    emitAuthChange();
     return o;
   },
   async adminUpdateOrderTracking(id: string, trackingNumber: string, estimatedDelivery?: string): Promise<Order> {
@@ -813,4 +829,30 @@ export const api = {
     return { subscriber: sub, promo };
   },
   async adminListSubscribers(): Promise<Subscriber[]> { return load().subscribers; },
+
+  // -------- promos CRUD --------
+  async adminListPromos(): Promise<PromoCode[]> { return load().promos; },
+  async adminCreatePromo(input: PromoCode): Promise<PromoCode> {
+    const s = load();
+    const code = input.code.trim().toUpperCase();
+    if (!code) throw new Error("Код промокода обязателен");
+    if (s.promos.find((p) => p.code === code)) throw new Error("Промокод с таким кодом уже существует");
+    if (!input.percent && !input.amount) throw new Error("Укажите процент или фиксированную сумму");
+    const promo: PromoCode = {
+      code,
+      percent: input.percent || undefined,
+      amount: input.amount || undefined,
+      description: input.description || `Скидка ${input.percent ? input.percent + "%" : input.amount + " ₽"}`,
+      usesLeft: input.usesLeft,
+    };
+    s.promos.unshift(promo);
+    save(s);
+    return promo;
+  },
+  async adminDeletePromo(code: string): Promise<{ ok: true }> {
+    const s = load();
+    s.promos = s.promos.filter((p) => p.code !== code);
+    save(s);
+    return { ok: true };
+  },
 };
