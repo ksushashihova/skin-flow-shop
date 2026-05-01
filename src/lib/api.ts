@@ -587,8 +587,10 @@ export const api = {
     const maxBonus = Math.min(user.bonusBalance, Math.floor(afterPromo * 0.5));
     const bonusUsed = Math.max(0, Math.min(bonusUse, maxBonus));
     const totalPrice = Math.max(0, afterPromo + deliveryPrice - bonusUsed);
+    // Бонусы НЕ начисляются сразу — только после доставки заказа.
+    // Списание бонусов происходит сразу при оформлении.
     const bonusEarned = Math.round((afterPromo - bonusUsed) * tier.rate);
-    user.bonusBalance = user.bonusBalance - bonusUsed + bonusEarned;
+    user.bonusBalance = Math.max(0, user.bonusBalance - bonusUsed);
     user.totalSpent += totalPrice;
 
     const order: Order = {
@@ -651,9 +653,22 @@ export const api = {
     const s = load();
     const o = s.orders.find((x) => x.id === id);
     if (!o) throw new Error("Заказ не найден");
+    const prev = o.status;
     o.status = status;
     o.updatedAt = new Date().toISOString();
+    const u = s.users.find((x) => x.id === o.userId);
+    if (u) {
+      // Начисляем бонусы только при первом переходе в "completed" (получен)
+      if (status === "completed" && prev !== "completed" && o.bonusEarned > 0) {
+        u.bonusBalance += o.bonusEarned;
+      }
+      // Если откатываем completed -> другой статус — снимаем начисленные бонусы
+      if (prev === "completed" && status !== "completed" && o.bonusEarned > 0) {
+        u.bonusBalance = Math.max(0, u.bonusBalance - o.bonusEarned);
+      }
+    }
     save(s);
+    emitAuthChange();
     return o;
   },
   async adminUpdateOrderTracking(id: string, trackingNumber: string, estimatedDelivery?: string): Promise<Order> {
