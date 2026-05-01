@@ -73,7 +73,7 @@ function Admin() {
           <h1 className="font-display text-4xl md:text-5xl">ОБЛАКО · Admin</h1>
         </div>
         <button
-          onClick={async () => { await api.logout(); router.navigate({ to: "/" }); }}
+          onClick={async () => { await api.logout(); window.location.href = "/"; }}
           className="text-xs uppercase tracking-widest border border-foreground px-5 py-3 hover:bg-foreground hover:text-background transition-colors"
         >
           Выйти

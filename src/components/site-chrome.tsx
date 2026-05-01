@@ -122,7 +122,7 @@ function MobileDrawer({
           </button>
           {user ? (
             <button
-              onClick={async () => { await api.logout(); onClose(); router.invalidate(); }}
+              onClick={async () => { await api.logout(); window.location.href = "/"; }}
               className="text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-foreground"
             >
               {t("auth.logout")}

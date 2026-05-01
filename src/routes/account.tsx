@@ -72,7 +72,7 @@ function AccountPage() {
         <TierCard user={user} />
 
         <button
-          onClick={async () => { await api.logout(); refresh(); }}
+          onClick={async () => { await api.logout(); window.location.href = "/"; }}
           className="mt-8 text-xs uppercase tracking-widest hover-underline"
         >
           {t("auth.logout")}
