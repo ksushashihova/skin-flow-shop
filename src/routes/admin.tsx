@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { api, type Order, type OrderStatus, type User, type Product, type Post, type Review, type Bundle, type GiftCard, type Subscriber } from "@/lib/api";
+import { api, type Order, type OrderStatus, type User, type Product, type Post, type Review, type Bundle, type GiftCard, type Subscriber, type PromoCode } from "@/lib/api";
 import { useI18n, formatPrice } from "@/lib/i18n";
 
 export const Route = createFileRoute("/admin")({
@@ -32,7 +32,7 @@ const DELIVERY_LABEL: Record<Order["deliveryMethod"], string> = {
   post: "Почта России",
 };
 
-type Tab = "orders" | "users" | "products" | "posts" | "reviews" | "bundles" | "gift" | "subs";
+type Tab = "orders" | "users" | "products" | "posts" | "reviews" | "bundles" | "gift" | "promos" | "subs";
 
 type OrdersView =
   | { kind: "list" }
@@ -61,6 +61,7 @@ function Admin() {
     { id: "reviews", label: "Отзывы" },
     { id: "bundles", label: "Наборы" },
     { id: "gift", label: "Сертификаты" },
+    { id: "promos", label: "Промокоды" },
     { id: "subs", label: "Подписчики" },
   ];
 
@@ -100,6 +101,7 @@ function Admin() {
       {tab === "reviews" && <ReviewsPanel />}
       {tab === "bundles" && <BundlesPanel />}
       {tab === "gift" && <GiftCardsPanel lang={lang} />}
+      {tab === "promos" && <PromosPanel lang={lang} />}
       {tab === "subs" && <SubscribersPanel />}
     </div>
   );
