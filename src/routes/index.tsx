@@ -21,19 +21,20 @@ function Index() {
 
   return (
     <div>
-      {/* HERO — картинка во всю ширину, header лежит поверх (overlay) */}
+      {/* HERO — на десктопе картинка с полями и скруглением, header overlay сверху */}
       <section className="relative -mt-16 md:-mt-20">
-        <div className="relative w-full h-[88vh] min-h-[620px] md:h-[94vh] md:min-h-[720px] overflow-hidden bg-muted">
-          <img
-            src="https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=2200&q=80"
-            alt=""
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-          {/* затемнение чтобы header и текст читались */}
-          <div className="absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-foreground/55 to-transparent pointer-events-none" />
-          <div className="absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-foreground/40 to-transparent pointer-events-none" />
+        <div className="md:px-6 md:pt-20">
+          <div className="relative w-full h-[88vh] min-h-[620px] md:h-[86vh] md:min-h-[680px] overflow-hidden bg-muted md:rounded-3xl">
+            <img
+              src="https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=2200&q=80"
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            {/* затемнение чтобы header и текст читались */}
+            <div className="absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-foreground/55 to-transparent pointer-events-none md:rounded-t-3xl" />
+            <div className="absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-foreground/40 to-transparent pointer-events-none md:rounded-b-3xl" />
 
-          <div className="absolute left-6 md:left-12 bottom-12 md:bottom-16 max-w-xl text-background fade-up">
+            <div className="absolute left-6 md:left-12 bottom-12 md:bottom-16 max-w-xl text-background fade-up">
             <div className="text-[11px] uppercase tracking-[0.3em] mb-4 opacity-90">
               Новая коллекция
             </div>
@@ -49,6 +50,7 @@ function Index() {
             >
               {t("hero.cta")}
             </Link>
+          </div>
           </div>
         </div>
       </section>
