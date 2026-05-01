@@ -34,6 +34,7 @@ function Checkout() {
   const [consent, setConsent] = useState(false);
   const [items, setItems] = useState<CartItem[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [bonusUse, setBonusUse] = useState(0);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -48,7 +49,9 @@ function Checkout() {
     return s + (p ? p.price * i.quantity : 0);
   }, 0);
   const deliveryPrice = DELIVERY_PRICES[delivery];
-  const total = subtotal + deliveryPrice;
+  const maxBonus = Math.min(user?.bonusBalance ?? 0, Math.floor(subtotal * 0.5));
+  const appliedBonus = Math.max(0, Math.min(bonusUse, maxBonus));
+  const total = Math.max(0, subtotal + deliveryPrice - appliedBonus);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,6 +67,7 @@ function Checkout() {
         payment,
         delivery,
         consent,
+        appliedBonus,
       );
       nav({ to: "/account", search: { orderId: order.id } as never });
     } catch (e) {
