@@ -51,6 +51,7 @@ function Index() {
               {t("hero.cta")}
             </Link>
           </div>
+          </div>
         </div>
       </section>
 
