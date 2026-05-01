@@ -22,8 +22,8 @@ function Index() {
   return (
     <div>
       {/* HERO — на десктопе картинка с полями и скруглением, header overlay сверху */}
-      <section className="relative -mt-16 md:-mt-20">
-        <div className="md:px-6 md:pt-20">
+      <section className="relative -mt-16 md:-mt-32">
+        <div className="md:px-6 md:pt-32">
           <div className="relative w-full h-[88vh] min-h-[620px] md:h-[86vh] md:min-h-[680px] overflow-hidden bg-muted md:rounded-3xl">
             <img
               src="https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=2200&q=80"
