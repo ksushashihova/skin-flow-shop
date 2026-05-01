@@ -197,60 +197,71 @@ export function SiteHeader({ variant = "solid" }: { variant?: "solid" | "overlay
   return (
     <header className={wrapperCls}>
       <div className={isOverlay ? "px-5 md:px-10" : "container-rhode"}>
-        <div className="grid grid-cols-3 items-center h-16 md:h-20">
-          {/* left: burger (mobile) + nav (desktop) */}
+        {/* MOBILE: одна строка с бургером, лого и корзиной */}
+        <div className="grid grid-cols-3 items-center h-16 md:hidden">
           <div className="flex items-center">
             <button
               onClick={() => setOpen(true)}
               aria-label="Меню"
-              className="md:hidden flex flex-col gap-[5px] p-2 -ml-2"
+              className="flex flex-col gap-[5px] p-2 -ml-2"
             >
               <span className={`block w-5 h-px ${burgerColor}`} />
               <span className={`block w-5 h-px ${burgerColor}`} />
               <span className={`block w-5 h-px ${burgerColor}`} />
             </button>
-            <nav className="hidden md:flex items-center gap-7 text-xs uppercase tracking-[0.2em]">
+          </div>
+          <div className="flex justify-center">
+            <Link to="/" className="font-display text-xl tracking-tight whitespace-nowrap">
+              ОБЛАКО
+            </Link>
+          </div>
+          <div className="flex items-center justify-end gap-4 text-xs uppercase tracking-[0.2em]">
+            <Link to="/cart" className={`flex items-center gap-1 ${linkCls}`}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M6 7h12l-1 13H7L6 7z" />
+                <path d="M9 7V5a3 3 0 0 1 6 0v2" />
+              </svg>
+              <span className="tabular-nums">({count})</span>
+            </Link>
+          </div>
+        </div>
+
+        {/* DESKTOP: лого сверху, под ним nav + actions */}
+        <div className="hidden md:block">
+          <div className="flex justify-center pt-5 pb-2">
+            <Link to="/" className="font-display text-2xl lg:text-3xl tracking-tight whitespace-nowrap">
+              ОБЛАКО
+            </Link>
+          </div>
+          <div className="grid grid-cols-3 items-center h-12">
+            <nav className="flex items-center gap-7 text-xs uppercase tracking-[0.2em]">
               {NAV_LINKS.slice(0, 5).map((l) => (
                 <Link key={l.to} to={l.to} className={linkCls} activeProps={{ className: "font-semibold" }}>
                   {t(l.key)}
                 </Link>
               ))}
             </nav>
-          </div>
-
-          {/* center: logo */}
-          <div className="flex justify-center">
-            <Link to="/" className="font-display text-xl md:text-2xl tracking-tight whitespace-nowrap">
-              ОБЛАКО
-            </Link>
-          </div>
-
-          {/* right: actions */}
-          <div className="flex items-center justify-end gap-4 md:gap-6 text-xs uppercase tracking-[0.2em]">
-            <button
-              onClick={() => setLang(lang === "ru" ? "en" : "ru")}
-              className={`hidden sm:inline ${linkCls}`}
-            >
-              {lang === "ru" ? "EN" : "RU"}
-            </button>
-            {user?.role === "admin" && (
-              <Link to="/admin" className={`hidden md:inline ${linkCls}`}>
-                {t("nav.admin")}
+            <div />
+            <div className="flex items-center justify-end gap-6 text-xs uppercase tracking-[0.2em]">
+              <button
+                onClick={() => setLang(lang === "ru" ? "en" : "ru")}
+                className={linkCls}
+              >
+                {lang === "ru" ? "EN" : "RU"}
+              </button>
+              {user?.role === "admin" && (
+                <Link to="/admin" className={linkCls}>
+                  {t("nav.admin")}
+                </Link>
+              )}
+              <Link to="/account" className={linkCls}>
+                {user ? user.name.split(" ")[0] : t("nav.account")}
               </Link>
-            )}
-            <Link to="/account" className={`hidden md:inline ${linkCls}`}>
-              {user ? user.name.split(" ")[0] : t("nav.account")}
-            </Link>
-            <Link to="/cart" className={`flex items-center gap-1 ${linkCls}`}>
-              <span className="hidden sm:inline">{t("nav.cart")}</span>
-              <span className="sm:hidden">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path d="M6 7h12l-1 13H7L6 7z" />
-                  <path d="M9 7V5a3 3 0 0 1 6 0v2" />
-                </svg>
-              </span>
-              <span className="tabular-nums">({count})</span>
-            </Link>
+              <Link to="/cart" className={`flex items-center gap-1 ${linkCls}`}>
+                <span>{t("nav.cart")}</span>
+                <span className="tabular-nums">({count})</span>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
