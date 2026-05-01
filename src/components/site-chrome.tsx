@@ -5,6 +5,9 @@ import { api, type User } from "@/lib/api";
 
 const NAV_LINKS = [
   { to: "/shop" as const, key: "nav.shop" as const },
+  { to: "/bundles" as const, key: "nav.bundles" as const },
+  { to: "/quiz" as const, key: "nav.quiz" as const },
+  { to: "/gift-cards" as const, key: "nav.gift" as const },
   { to: "/about" as const, key: "nav.about" as const },
   { to: "/journal" as const, key: "nav.journal" as const },
   { to: "/faq" as const, key: "nav.faq" as const },
