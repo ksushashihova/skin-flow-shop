@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { api, type Product } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { ProductCard } from "@/components/product-card";
-import { HomeTopBar, HomeHeroNav } from "@/components/site-chrome";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -22,25 +21,19 @@ function Index() {
 
   return (
     <div>
-      {/* Узкая верхняя полоса с центрированным логотипом */}
-      <HomeTopBar />
-
-      {/* HERO — картинка с отступами по краям, нав поверх неё */}
-      <section className="px-3 md:px-4 pt-3 md:pt-4">
-        <div className="relative w-full h-[78vh] min-h-[560px] md:h-[86vh] md:min-h-[680px] overflow-hidden rounded-sm bg-muted">
+      {/* HERO — картинка во всю ширину, header лежит поверх (overlay) */}
+      <section className="relative -mt-16 md:-mt-20">
+        <div className="relative w-full h-[88vh] min-h-[620px] md:h-[94vh] md:min-h-[720px] overflow-hidden bg-muted">
           <img
             src="https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=2200&q=80"
             alt=""
             className="absolute inset-0 w-full h-full object-cover"
           />
-          {/* затемнение по краям, чтобы навигация и текст читались */}
-          <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-foreground/40 to-transparent pointer-events-none" />
-          <div className="absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-foreground/35 to-transparent pointer-events-none" />
+          {/* затемнение чтобы header и текст читались */}
+          <div className="absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-foreground/55 to-transparent pointer-events-none" />
+          <div className="absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-foreground/40 to-transparent pointer-events-none" />
 
-          {/* Навигация ПОВЕРХ картинки */}
-          <HomeHeroNav />
-
-          <div className="absolute left-6 md:left-12 bottom-10 md:bottom-14 max-w-xl text-background fade-up">
+          <div className="absolute left-6 md:left-12 bottom-12 md:bottom-16 max-w-xl text-background fade-up">
             <div className="text-[11px] uppercase tracking-[0.3em] mb-4 opacity-90">
               Новая коллекция
             </div>
