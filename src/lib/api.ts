@@ -347,6 +347,7 @@ export const api = {
     paymentMethod: PaymentMethod,
     deliveryMethod: DeliveryMethod,
     consent: boolean,
+    bonusUse: number = 0,
   ): Promise<Order> {
     await delay(350);
     if (!consent) throw new Error("Необходимо согласие на обработку персональных данных");
@@ -358,34 +359,41 @@ export const api = {
       const p = s.products.find((p) => p.id === c.productId)!;
       return { productId: p.id, name: p.name_ru, quantity: c.quantity, price: p.price, image: p.images[0] };
     });
-    // проверка остатков
     for (const it of items) {
       const p = s.products.find((p) => p.id === it.productId)!;
       if (it.quantity > p.stock) throw new Error(`Недостаточно "${p.name_ru}": доступно ${p.stock}`);
     }
-    // списание остатков
     for (const it of items) {
       const p = s.products.find((p) => p.id === it.productId)!;
       p.stock = Math.max(0, p.stock - it.quantity);
     }
     const deliveryPrice = DELIVERY_PRICES[deliveryMethod];
+    const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+    const maxBonus = Math.min(user.bonusBalance, Math.floor(subtotal * 0.5));
+    const bonusUsed = Math.max(0, Math.min(bonusUse, maxBonus));
+    const totalPrice = Math.max(0, subtotal + deliveryPrice - bonusUsed);
+    const bonusEarned = Math.round((subtotal - bonusUsed) * BONUS_RATE);
+    user.bonusBalance = user.bonusBalance - bonusUsed + bonusEarned;
     const order: Order = {
       id: "o_" + Date.now().toString(36),
       userId: user.id,
       userEmail: user.email,
       status: "new",
-      totalPrice: items.reduce((sum, i) => sum + i.price * i.quantity, 0) + deliveryPrice,
+      totalPrice,
       items,
       address,
       paymentMethod,
       deliveryMethod,
       deliveryPrice,
+      bonusUsed,
+      bonusEarned,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
     s.orders.unshift(order);
     s.cart = [];
     save(s);
+    emitAuthChange();
     console.info("[demo] email подтверждения отправлен на", user.email);
     return order;
   },
