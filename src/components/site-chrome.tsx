@@ -7,6 +7,7 @@ const NAV_LINKS = [
   { to: "/shop" as const, key: "nav.shop" as const },
   { to: "/about" as const, key: "nav.about" as const },
   { to: "/journal" as const, key: "nav.journal" as const },
+  { to: "/faq" as const, key: "nav.faq" as const },
 ];
 
 function useChrome() {
