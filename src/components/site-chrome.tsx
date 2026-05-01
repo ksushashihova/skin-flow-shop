@@ -1,4 +1,4 @@
-import { Link, useRouter } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { api, type User } from "@/lib/api";
@@ -37,7 +37,6 @@ function MobileDrawer({
   variant?: "dark" | "light";
 }) {
   const { t, lang, setLang } = useI18n();
-  const router = useRouter();
 
   useEffect(() => {
     if (open) document.body.style.overflow = "hidden";

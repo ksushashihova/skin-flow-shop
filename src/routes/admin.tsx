@@ -1,4 +1,4 @@
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { api, type Order, type OrderStatus, type User, type Product, type Post, type Review, type Bundle, type GiftCard, type Subscriber } from "@/lib/api";
 import { useI18n, formatPrice } from "@/lib/i18n";
@@ -45,7 +45,6 @@ type UsersView =
 
 function Admin() {
   const { lang } = useI18n();
-  const router = useRouter();
   const [me, setMe] = useState<User | null>(null);
   const [tab, setTab] = useState<Tab>("orders");
 
