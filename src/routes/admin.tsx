@@ -949,3 +949,92 @@ function SubscribersPanel() {
     </div>
   );
 }
+
+/* ----------------------------- PROMOS ----------------------------- */
+
+function PromosPanel({ lang }: { lang: "ru" | "en" }) {
+  const [promos, setPromos] = useState<PromoCode[]>([]);
+  const [code, setCode] = useState("");
+  const [percent, setPercent] = useState("");
+  const [amount, setAmount] = useState("");
+  const [description, setDescription] = useState("");
+  const [usesLeft, setUsesLeft] = useState("");
+  const [err, setErr] = useState<string | null>(null);
+
+  const refresh = async () => setPromos(await api.adminListPromos());
+  useEffect(() => { refresh(); }, []);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErr(null);
+    try {
+      await api.adminCreatePromo({
+        code,
+        percent: percent ? Number(percent) : undefined,
+        amount: amount ? Number(amount) : undefined,
+        description,
+        usesLeft: usesLeft ? Number(usesLeft) : undefined,
+      });
+      setCode(""); setPercent(""); setAmount(""); setDescription(""); setUsesLeft("");
+      refresh();
+    } catch (e) {
+      setErr((e as Error).message);
+    }
+  };
+
+  const fmt = (n: number) => new Intl.NumberFormat(lang === "ru" ? "ru-RU" : "en-US").format(n);
+
+  return (
+    <div>
+      <div className="text-xs uppercase tracking-widest text-muted-foreground mb-4">Промокоды · {promos.length}</div>
+
+      <form onSubmit={submit} className="bg-secondary p-6 mb-8 grid md:grid-cols-5 gap-4">
+        <Field label="Код" value={code} onChange={(v) => setCode(v.toUpperCase())} />
+        <Field label="Скидка %" type="number" value={percent} onChange={setPercent} />
+        <Field label="Скидка ₽" type="number" value={amount} onChange={setAmount} />
+        <Field label="Использований" type="number" value={usesLeft} onChange={setUsesLeft} />
+        <Field label="Описание" value={description} onChange={setDescription} />
+        <div className="md:col-span-5 flex items-center gap-4">
+          <button type="submit" className="text-xs uppercase tracking-widest bg-foreground text-background px-6 py-3">+ Добавить промокод</button>
+          {err && <span className="text-xs text-destructive">{err}</span>}
+        </div>
+      </form>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[640px]">
+          <thead className="text-xs uppercase tracking-widest text-muted-foreground border-b border-border">
+            <tr>
+              <th className="text-left py-3">Код</th>
+              <th className="text-left">Скидка</th>
+              <th className="text-left">Описание</th>
+              <th className="text-left">Осталось</th>
+              <th className="text-right">Действие</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {promos.length === 0 && <tr><td colSpan={5} className="py-6 text-center text-muted-foreground">Промокодов пока нет</td></tr>}
+            {promos.map((p) => (
+              <tr key={p.code}>
+                <td className="py-4 font-mono">{p.code}</td>
+                <td className="tabular-nums">
+                  {p.percent ? `${p.percent}%` : null}
+                  {p.amount ? `${fmt(p.amount)} ₽` : null}
+                </td>
+                <td className="text-muted-foreground">{p.description}</td>
+                <td className="tabular-nums">{p.usesLeft ?? "∞"}</td>
+                <td className="text-right">
+                  <button
+                    onClick={async () => { if (confirm(`Удалить промокод ${p.code}?`)) { await api.adminDeletePromo(p.code); refresh(); } }}
+                    className="text-xs uppercase tracking-widest text-destructive hover:opacity-70"
+                  >
+                    Удалить
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
