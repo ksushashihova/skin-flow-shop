@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { api, type Order, type User } from "@/lib/api";
+import { api, tierFor, TIERS, trackingStagesFor, trackingUrlFor, type Order, type User } from "@/lib/api";
 import { useI18n, formatPrice } from "@/lib/i18n";
 
 export const Route = createFileRoute("/account")({
@@ -67,8 +67,10 @@ function AccountPage() {
         <div className="mt-6 p-4 bg-secondary">
           <div className="text-xs uppercase tracking-widest text-muted-foreground mb-1">Бонусный счёт</div>
           <div className="font-display text-3xl tabular-nums">{user.bonusBalance}</div>
-          <div className="text-xs text-muted-foreground mt-1">Возврат 5% с каждого заказа</div>
+          <div className="text-xs text-muted-foreground mt-1">Возврат {Math.round(tierFor(user.totalSpent).rate * 100)}% с каждого заказа</div>
         </div>
+        <TierCard user={user} />
+
         <button
           onClick={async () => { await api.logout(); refresh(); }}
           className="mt-8 text-xs uppercase tracking-widest hover-underline"
@@ -108,9 +110,12 @@ function AccountPage() {
                   </button>
                   {isOpen && (
                     <div className="mt-6 bg-secondary p-6 space-y-6">
+                      {o.status !== "cancelled" && (
+                        <TrackingTimeline order={o} />
+                      )}
                       <ul className="space-y-4">
                         {o.items.map((it) => (
-                          <li key={it.productId} className="flex gap-4">
+                          <li key={it.productId + it.name} className="flex gap-4">
                             {it.image && <img src={it.image} alt="" className="w-16 h-20 object-cover" />}
                             <div className="flex-1 flex justify-between text-sm">
                               <div>
@@ -128,6 +133,7 @@ function AccountPage() {
                         <div>Адрес: {o.address.city}, {o.address.addressLine}, {o.address.postalCode}</div>
                         {o.bonusUsed > 0 && <div>Списано бонусов: −{o.bonusUsed}</div>}
                         {o.bonusEarned > 0 && <div>Начислено бонусов: +{o.bonusEarned}</div>}
+                        {o.promoUsed && <div>Промокод/сертификат: {o.promoUsed} (−{formatPrice(o.promoDiscount, lang)})</div>}
                       </div>
                       {cancellable && (
                         <button
@@ -145,6 +151,75 @@ function AccountPage() {
           </ul>
         )}
       </section>
+    </div>
+  );
+}
+
+function TrackingTimeline({ order }: { order: Order }) {
+  const stages = trackingStagesFor(order);
+  const trackUrl = trackingUrlFor(order);
+  const eta = order.estimatedDelivery
+    ? new Date(order.estimatedDelivery).toLocaleDateString("ru-RU", { day: "numeric", month: "long" })
+    : null;
+  return (
+    <div className="border-b border-border pb-6">
+      <div className="flex flex-wrap gap-4 justify-between items-baseline mb-5">
+        <div className="text-xs uppercase tracking-widest text-muted-foreground">Отслеживание</div>
+        {order.trackingNumber && (
+          <div className="text-xs">
+            <span className="text-muted-foreground">Трек: </span>
+            {trackUrl ? (
+              <a href={trackUrl} target="_blank" rel="noreferrer" className="font-medium hover-underline tabular-nums">
+                {order.trackingNumber}
+              </a>
+            ) : (
+              <span className="font-medium tabular-nums">{order.trackingNumber}</span>
+            )}
+          </div>
+        )}
+      </div>
+      <ol className="grid grid-cols-4 gap-2">
+        {stages.map((st, i) => (
+          <li key={st.key} className="text-center">
+            <div className="relative flex items-center justify-center h-6 mb-2">
+              {i > 0 && (
+                <span className={`absolute left-0 right-1/2 top-1/2 h-px ${stages[i - 1].done ? "bg-foreground" : "bg-border"}`} />
+              )}
+              {i < stages.length - 1 && (
+                <span className={`absolute left-1/2 right-0 top-1/2 h-px ${st.done ? "bg-foreground" : "bg-border"}`} />
+              )}
+              <span className={`relative z-10 w-3 h-3 rounded-full ${st.done ? "bg-foreground" : "bg-background border border-border"}`} />
+            </div>
+            <div className={`text-[11px] uppercase tracking-widest ${st.done ? "text-foreground" : "text-muted-foreground"}`}>
+              {st.label}
+            </div>
+            {st.date && <div className="text-[10px] text-muted-foreground mt-1">{st.date}</div>}
+          </li>
+        ))}
+      </ol>
+      {eta && order.status !== "completed" && (
+        <div className="text-xs text-muted-foreground mt-4">Ожидаемая доставка: <span className="text-foreground">{eta}</span></div>
+      )}
+    </div>
+  );
+}
+
+function TierCard({ user }: { user: User }) {
+  const current = tierFor(user.totalSpent);
+  const next = TIERS.find((t) => t.min > user.totalSpent);
+  const remaining = next ? Math.max(0, next.min - user.totalSpent) : 0;
+  return (
+    <div className="mt-4 p-4 border border-border">
+      <div className="text-xs uppercase tracking-widest text-muted-foreground mb-1">Уровень</div>
+      <div className="font-display text-2xl">{current.label}</div>
+      <ul className="text-xs text-muted-foreground mt-2 space-y-1">
+        {current.perks.map((p) => <li key={p}>· {p}</li>)}
+      </ul>
+      {next && (
+        <div className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border">
+          До <span className="text-foreground">{next.label}</span> — ещё {new Intl.NumberFormat("ru-RU").format(remaining)} ₽
+        </div>
+      )}
     </div>
   );
 }

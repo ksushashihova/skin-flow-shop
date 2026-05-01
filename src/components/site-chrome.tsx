@@ -5,6 +5,9 @@ import { api, type User } from "@/lib/api";
 
 const NAV_LINKS = [
   { to: "/shop" as const, key: "nav.shop" as const },
+  { to: "/bundles" as const, key: "nav.bundles" as const },
+  { to: "/quiz" as const, key: "nav.quiz" as const },
+  { to: "/gift-cards" as const, key: "nav.gift" as const },
   { to: "/about" as const, key: "nav.about" as const },
   { to: "/journal" as const, key: "nav.journal" as const },
   { to: "/faq" as const, key: "nav.faq" as const },
@@ -281,22 +284,22 @@ export function SiteFooter() {
           <div className="uppercase text-xs tracking-widest mb-3 text-muted-foreground">Магазин</div>
           <ul className="space-y-2">
             <li><Link to="/shop" className="hover-underline">Все товары</Link></li>
-            <li><Link to="/about" className="hover-underline">О бренде</Link></li>
-            <li><Link to="/journal" className="hover-underline">Журнал</Link></li>
+            <li><Link to="/bundles" className="hover-underline">Наборы</Link></li>
+            <li><Link to="/gift-cards" className="hover-underline">Сертификаты</Link></li>
+            <li><Link to="/quiz" className="hover-underline">Подбор ухода</Link></li>
           </ul>
         </div>
         <div>
           <div className="uppercase text-xs tracking-widest mb-3 text-muted-foreground">Помощь</div>
           <ul className="space-y-2">
             <li><Link to="/faq" className="hover-underline">Вопросы и ответы</Link></li>
+            <li><Link to="/about" className="hover-underline">О бренде</Link></li>
+            <li><Link to="/journal" className="hover-underline">Журнал</Link></li>
             <li><Link to="/account" className="hover-underline">Личный кабинет</Link></li>
             <li><Link to="/privacy" className="hover-underline">Политика конфиденциальности</Link></li>
           </ul>
         </div>
-        <div>
-          <div className="uppercase text-xs tracking-widest mb-3 text-muted-foreground">Контакт</div>
-          <p className="text-muted-foreground">support@oblako.ru</p>
-        </div>
+        <NewsletterWidget />
       </div>
       <div className="border-t border-border">
         <div className="container-rhode py-6 text-xs text-muted-foreground flex justify-between">
@@ -305,5 +308,59 @@ export function SiteFooter() {
         </div>
       </div>
     </footer>
+  );
+}
+
+function NewsletterWidget() {
+  const [email, setEmail] = useState("");
+  const [consent, setConsent] = useState(false);
+  const [state, setState] = useState<{ ok?: string; err?: string } | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setState(null);
+    setLoading(true);
+    try {
+      const r = await api.subscribe(email, consent);
+      setState({ ok: `Промокод ${r.promo.code} — скидка 10%` });
+      setEmail("");
+    } catch (err) {
+      setState({ err: (err as Error).message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div>
+      <div className="uppercase text-xs tracking-widest mb-3 text-muted-foreground">Рассылка</div>
+      <p className="text-muted-foreground text-xs mb-3">
+        Подпишитесь и получите промокод <span className="text-foreground font-medium">WELCOME10</span> — −10% на первый заказ.
+      </p>
+      <form onSubmit={submit} className="space-y-2">
+        <input
+          type="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="email@example.com"
+          className="w-full border-b border-border bg-transparent py-2 text-sm outline-none focus:border-foreground"
+        />
+        <label className="flex items-start gap-2 text-[11px] text-muted-foreground leading-snug">
+          <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} required className="mt-0.5" />
+          <span>Согласие на обработку персональных данных</span>
+        </label>
+        <button
+          disabled={loading}
+          className="w-full bg-foreground text-background py-2.5 text-[11px] uppercase tracking-[0.2em] disabled:opacity-50"
+        >
+          {loading ? "..." : "Подписаться"}
+        </button>
+        {state?.ok && <div className="text-xs text-foreground">{state.ok}</div>}
+        {state?.err && <div className="text-xs text-destructive">{state.err}</div>}
+      </form>
+      <p className="text-[11px] text-muted-foreground mt-2">support@oblako.ru</p>
+    </div>
   );
 }

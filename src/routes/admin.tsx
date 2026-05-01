@@ -1,6 +1,6 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { api, type Order, type OrderStatus, type User, type Product, type Post } from "@/lib/api";
+import { api, type Order, type OrderStatus, type User, type Product, type Post, type Review, type Bundle, type GiftCard, type Subscriber } from "@/lib/api";
 import { useI18n, formatPrice } from "@/lib/i18n";
 
 export const Route = createFileRoute("/admin")({
@@ -32,7 +32,7 @@ const DELIVERY_LABEL: Record<Order["deliveryMethod"], string> = {
   post: "Почта России",
 };
 
-type Tab = "orders" | "users" | "products" | "posts";
+type Tab = "orders" | "users" | "products" | "posts" | "reviews" | "bundles" | "gift" | "subs";
 
 type OrdersView =
   | { kind: "list" }
@@ -59,6 +59,10 @@ function Admin() {
     { id: "users", label: "Пользователи" },
     { id: "products", label: "Товары" },
     { id: "posts", label: "Журнал" },
+    { id: "reviews", label: "Отзывы" },
+    { id: "bundles", label: "Наборы" },
+    { id: "gift", label: "Сертификаты" },
+    { id: "subs", label: "Подписчики" },
   ];
 
   return (
@@ -94,6 +98,10 @@ function Admin() {
       {tab === "users" && <UsersPanel lang={lang} />}
       {tab === "products" && <ProductsPanel />}
       {tab === "posts" && <PostsPanel />}
+      {tab === "reviews" && <ReviewsPanel />}
+      {tab === "bundles" && <BundlesPanel />}
+      {tab === "gift" && <GiftCardsPanel lang={lang} />}
+      {tab === "subs" && <SubscribersPanel />}
     </div>
   );
 }
@@ -383,6 +391,8 @@ const EMPTY_PRODUCT: Omit<Product, "id"> = {
   images: [""],
   stock: 0,
   category: "skin",
+  videoUrl: "",
+  howToUse: "",
 };
 
 function ProductsPanel() {
@@ -528,6 +538,18 @@ function ProductForm({
             onChange={(e) => set("description_en", e.target.value)}
             rows={4}
             className="w-full bg-background border border-border px-3 py-3"
+          />
+        </div>
+        <Field label="Видео-обзор (URL)" value={data.videoUrl ?? ""} onChange={(v) => set("videoUrl", v)} />
+        <div />
+        <div className="md:col-span-2">
+          <label className="block text-xs uppercase tracking-widest text-muted-foreground mb-2">Как использовать</label>
+          <textarea
+            value={data.howToUse ?? ""}
+            onChange={(e) => set("howToUse", e.target.value)}
+            rows={3}
+            className="w-full bg-background border border-border px-3 py-3"
+            placeholder="Нанесите утром и вечером на очищенную кожу..."
           />
         </div>
       </div>
@@ -716,6 +738,213 @@ function PostForm({
           Отмена
         </button>
       </div>
+    </div>
+  );
+}
+
+/* ----------------------------- REVIEWS ----------------------------- */
+
+function ReviewsPanel() {
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const refresh = async () => {
+    setReviews(await api.adminListReviews());
+    setProducts(await api.listProducts());
+  };
+  useEffect(() => { refresh(); }, []);
+  const productName = (id: string) => products.find((p) => p.id === id)?.name_ru ?? id;
+
+  return (
+    <div>
+      <div className="text-xs uppercase tracking-widest text-muted-foreground mb-4">Отзывы · {reviews.length}</div>
+      <ul className="divide-y divide-border border-y border-border">
+        {reviews.length === 0 && <li className="py-6 text-center text-muted-foreground text-sm">Отзывов пока нет</li>}
+        {reviews.map((r) => (
+          <li key={r.id} className="py-5 flex flex-col md:flex-row gap-4 md:items-start md:justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-3">
+                <span className="font-medium">{r.authorName}</span>
+                <span className="text-yellow-500 text-sm">{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</span>
+                <span className="text-xs text-muted-foreground">{new Date(r.createdAt).toLocaleDateString("ru-RU")}</span>
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">Товар: {productName(r.productId)}</div>
+              <p className="text-sm mt-2">{r.text}</p>
+              {r.photos.length > 0 && (
+                <div className="flex gap-2 mt-2">
+                  {r.photos.map((src, i) => <img key={i} src={src} alt="" className="w-14 h-14 object-cover" />)}
+                </div>
+              )}
+            </div>
+            <button
+              onClick={async () => { if (confirm("Удалить отзыв?")) { await api.adminDeleteReview(r.id); refresh(); } }}
+              className="text-xs uppercase tracking-widest text-destructive hover:opacity-70 self-start"
+            >
+              Удалить
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/* ----------------------------- BUNDLES ----------------------------- */
+
+const EMPTY_BUNDLE: Omit<Bundle, "id"> = {
+  slug: "",
+  name: "",
+  description: "",
+  productIds: [],
+  cover: "",
+  discountPercent: 10,
+};
+
+function BundlesPanel() {
+  const [bundles, setBundles] = useState<Bundle[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [editing, setEditing] = useState<Bundle | null>(null);
+  const [creating, setCreating] = useState(false);
+  const refresh = async () => { setBundles(await api.listBundles()); setProducts(await api.listProducts()); };
+  useEffect(() => { refresh(); }, []);
+
+  if (creating) return <BundleForm initial={{ ...EMPTY_BUNDLE, id: "" } as Bundle} title="Новый набор" products={products}
+    onCancel={() => setCreating(false)}
+    onSave={async (d) => { const { id: _i, ...rest } = d; void _i; await api.adminCreateBundle(rest); setCreating(false); refresh(); }} />;
+  if (editing) return <BundleForm initial={editing} title={`Редактировать: ${editing.name}`} products={products}
+    onCancel={() => setEditing(null)}
+    onSave={async (d) => { await api.adminUpdateBundle(editing.id, d); setEditing(null); refresh(); }} />;
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <div className="text-xs uppercase tracking-widest text-muted-foreground">Наборов · {bundles.length}</div>
+        <button onClick={() => setCreating(true)} className="text-xs uppercase tracking-widest bg-foreground text-background px-5 py-3">+ Добавить набор</button>
+      </div>
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {bundles.map((b) => (
+          <div key={b.id} className="border border-border flex flex-col">
+            <div className="aspect-[4/3] bg-muted overflow-hidden">{b.cover && <img src={b.cover} alt="" className="w-full h-full object-cover" />}</div>
+            <div className="p-4 flex-1 flex flex-col">
+              <div className="font-display text-lg">{b.name}</div>
+              <div className="text-xs text-muted-foreground mt-1">{b.productIds.length} товаров · −{b.discountPercent}%</div>
+              <div className="mt-4 flex justify-between text-xs">
+                <button onClick={() => setEditing(b)} className="hover-underline">Изменить</button>
+                <button onClick={async () => { if (confirm("Удалить набор?")) { await api.adminDeleteBundle(b.id); refresh(); } }} className="text-destructive hover:opacity-70">Удалить</button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function BundleForm({ initial, title, products, onCancel, onSave }: {
+  initial: Bundle; title: string; products: Product[]; onCancel: () => void; onSave: (d: Bundle) => void | Promise<void>;
+}) {
+  const [data, setData] = useState<Bundle>(initial);
+  const set = <K extends keyof Bundle>(k: K, v: Bundle[K]) => setData((d) => ({ ...d, [k]: v }));
+  const toggle = (id: string) => set("productIds", data.productIds.includes(id) ? data.productIds.filter((x) => x !== id) : [...data.productIds, id]);
+  return (
+    <div>
+      <button onClick={onCancel} className="text-xs uppercase tracking-widest text-muted-foreground hover-underline mb-6">← Отмена</button>
+      <h2 className="font-display text-3xl mb-8">{title}</h2>
+      <div className="grid md:grid-cols-2 gap-6">
+        <Field label="Название" value={data.name} onChange={(v) => set("name", v)} />
+        <Field label="Slug" value={data.slug} onChange={(v) => set("slug", v)} />
+        <Field label="Скидка, %" type="number" value={String(data.discountPercent)} onChange={(v) => set("discountPercent", Number(v) || 0)} />
+        <Field label="Обложка (URL)" value={data.cover} onChange={(v) => set("cover", v)} />
+        <div className="md:col-span-2">
+          <label className="block text-xs uppercase tracking-widest text-muted-foreground mb-2">Описание</label>
+          <textarea value={data.description} onChange={(e) => set("description", e.target.value)} rows={3} className="w-full bg-background border border-border px-3 py-3" />
+        </div>
+        <div className="md:col-span-2">
+          <label className="block text-xs uppercase tracking-widest text-muted-foreground mb-2">Товары в наборе</label>
+          <div className="grid sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto border border-border p-3">
+            {products.map((p) => (
+              <label key={p.id} className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={data.productIds.includes(p.id)} onChange={() => toggle(p.id)} />
+                <span>{p.name_ru} <span className="text-muted-foreground">· {p.price}₽</span></span>
+              </label>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="flex gap-3 mt-8">
+        <button onClick={() => onSave(data)} className="text-xs uppercase tracking-widest bg-foreground text-background px-6 py-3">Сохранить</button>
+        <button onClick={onCancel} className="text-xs uppercase tracking-widest border border-border px-6 py-3">Отмена</button>
+      </div>
+    </div>
+  );
+}
+
+/* ----------------------------- GIFT CARDS ----------------------------- */
+
+function GiftCardsPanel({ lang }: { lang: "ru" | "en" }) {
+  const [cards, setCards] = useState<GiftCard[]>([]);
+  useEffect(() => {
+    const refresh = async () => setCards(await api.adminListGiftCards());
+    refresh();
+    const i = setInterval(refresh, 2000);
+    return () => clearInterval(i);
+  }, []);
+  return (
+    <div>
+      <div className="text-xs uppercase tracking-widest text-muted-foreground mb-4">Сертификатов · {cards.length}</div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[640px]">
+          <thead className="text-xs uppercase tracking-widest text-muted-foreground border-b border-border">
+            <tr>
+              <th className="text-left py-3">Код</th>
+              <th className="text-left">Получатель</th>
+              <th className="text-left">Номинал</th>
+              <th className="text-left">Остаток</th>
+              <th className="text-left">Дата</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {cards.length === 0 && <tr><td colSpan={5} className="py-6 text-center text-muted-foreground">Сертификатов пока нет</td></tr>}
+            {cards.map((c) => {
+              const fmt = (n: number) => new Intl.NumberFormat(lang === "ru" ? "ru-RU" : "en-US").format(n);
+              return (
+                <tr key={c.code}>
+                  <td className="py-4 font-mono text-xs">{c.code}</td>
+                  <td>{c.recipientEmail}</td>
+                  <td className="tabular-nums">{fmt(c.amount)} ₽</td>
+                  <td className={`tabular-nums ${c.remaining === 0 ? "text-muted-foreground" : ""}`}>{fmt(c.remaining)} ₽</td>
+                  <td className="text-muted-foreground">{new Date(c.createdAt).toLocaleDateString("ru-RU")}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* ----------------------------- SUBSCRIBERS ----------------------------- */
+
+function SubscribersPanel() {
+  const [subs, setSubs] = useState<Subscriber[]>([]);
+  useEffect(() => {
+    const refresh = async () => setSubs(await api.adminListSubscribers());
+    refresh();
+    const i = setInterval(refresh, 2000);
+    return () => clearInterval(i);
+  }, []);
+  return (
+    <div>
+      <div className="text-xs uppercase tracking-widest text-muted-foreground mb-4">Подписчиков · {subs.length}</div>
+      <ul className="divide-y divide-border border-y border-border">
+        {subs.length === 0 && <li className="py-6 text-center text-muted-foreground text-sm">Подписок пока нет</li>}
+        {subs.map((s) => (
+          <li key={s.email} className="py-4 flex justify-between text-sm">
+            <span>{s.email}</span>
+            <span className="text-muted-foreground">{s.promoCode} · {new Date(s.createdAt).toLocaleDateString("ru-RU")}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
