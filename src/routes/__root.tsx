@@ -55,8 +55,7 @@ function RootComponent() {
   const isHome = pathname === "/";
   // Скрываем chrome только на админке и пока не проверили сессию (чтобы не мигало)
   const hideChrome = isAdmin || isAdminSession || !authChecked;
-  const headerVariant: "solid" | "overlay" = "solid";
-  void isHome;
+  const headerVariant = isHome ? "overlay" : "solid";
 
   useEffect(() => {
     let alive = true;
