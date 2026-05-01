@@ -201,6 +201,8 @@ function TrackingTimeline({ order }: { order: Order }) {
     </div>
   );
 }
+
+function ProfileForm({ user, onSaved }: { user: User; onSaved: (u: User) => void }) {
   const [name, setName] = useState(user.name);
   const [phone, setPhone] = useState(user.phone ?? "");
   const [saved, setSaved] = useState(false);
