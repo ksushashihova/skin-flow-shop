@@ -21,23 +21,17 @@ function CartPage() {
   };
   useEffect(() => { load(); }, []);
 
-  type Detailed = {
-    item: CartItem;
-    name: string;
-    image: string;
-    price: number;
-    href: { to: "/product/$slug"; params: { slug: string } } | { to: "/bundles/$slug"; params: { slug: string } };
-  };
-  const detailed: Detailed[] = items.flatMap((item) => {
+  type Detailed =
+    | { kind: "product"; item: CartItem; name: string; image: string; price: number; slug: string }
+    | { kind: "bundle"; item: CartItem; name: string; image: string; price: number; slug: string };
+  const detailed: Detailed[] = items.flatMap((item): Detailed[] => {
     if (item.productId) {
       const p = products.find((x) => x.id === item.productId);
       if (!p) return [];
       return [{
-        item,
+        kind: "product", item,
         name: lang === "ru" ? p.name_ru : p.name_en,
-        image: p.images[0],
-        price: p.price,
-        href: { to: "/product/$slug" as const, params: { slug: p.slug } },
+        image: p.images[0], price: p.price, slug: p.slug,
       }];
     }
     if (item.bundleId) {
@@ -45,11 +39,9 @@ function CartPage() {
       if (!b) return [];
       const { discounted } = api.bundlePrice(b, products);
       return [{
-        item,
+        kind: "bundle", item,
         name: `Набор · ${b.name}`,
-        image: b.cover,
-        price: discounted,
-        href: { to: "/bundles/$slug" as const, params: { slug: b.slug } },
+        image: b.cover, price: discounted, slug: b.slug,
       }];
     }
     return [];
@@ -79,10 +71,10 @@ function CartPage() {
               <img src={d.image} alt={d.name} className="w-28 h-32 object-cover" />
               <div className="flex-1 flex flex-col justify-between">
                 <div className="flex justify-between gap-4">
-                  {d.href.to === "/product/$slug" ? (
-                    <Link to="/product/$slug" params={d.href.params} className="font-display text-xl hover-underline">{d.name}</Link>
+                  {d.kind === "product" ? (
+                    <Link to="/product/$slug" params={{ slug: d.slug }} className="font-display text-xl hover-underline">{d.name}</Link>
                   ) : (
-                    <Link to="/bundles/$slug" params={d.href.params} className="font-display text-xl hover-underline">{d.name}</Link>
+                    <Link to="/bundles/$slug" params={{ slug: d.slug }} className="font-display text-xl hover-underline">{d.name}</Link>
                   )}
                   <div className="tabular-nums">{formatPrice(d.price * d.item.quantity, lang)}</div>
                 </div>
