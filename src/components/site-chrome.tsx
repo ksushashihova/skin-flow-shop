@@ -13,28 +13,41 @@ const NAV_LINKS = [
   { to: "/faq" as const, key: "nav.faq" as const },
 ];
 
+/* ---------------------------------------------------------------- */
+/*  shared chrome state hook                                         */
+/* ---------------------------------------------------------------- */
 function useChrome() {
   const [user, setUser] = useState<User | null>(null);
   const [count, setCount] = useState(0);
   useEffect(() => {
+    let alive = true;
     const refresh = async () => {
-      setUser(await api.me());
+      const u = await api.me();
       const c = await api.getCart();
+      if (!alive) return;
+      setUser(u);
       setCount(c.reduce((s, i) => s + i.quantity, 0));
     };
     refresh();
-    const i = setInterval(refresh, 1500);
-    return () => clearInterval(i);
+    const i = setInterval(refresh, 2000);
+    const onAuth = () => refresh();
+    window.addEventListener("oblako-auth-change", onAuth);
+    return () => {
+      alive = false;
+      clearInterval(i);
+      window.removeEventListener("oblako-auth-change", onAuth);
+    };
   }, []);
   return { user, count };
 }
 
-/** Drawer-меню слева, читаемое, со всеми пунктами */
+/* ---------------------------------------------------------------- */
+/*  Универсальный мобильный drawer                                    */
+/* ---------------------------------------------------------------- */
 function MobileDrawer({
-  open, onClose, user, count, variant = "dark",
+  open, onClose, user, count,
 }: {
   open: boolean; onClose: () => void; user: User | null; count: number;
-  variant?: "dark" | "light";
 }) {
   const { t, lang, setLang } = useI18n();
 
@@ -44,85 +57,103 @@ function MobileDrawer({
     return () => { document.body.style.overflow = ""; };
   }, [open]);
 
-  const linkBase = "block py-4 font-display text-3xl text-foreground hover:opacity-60 transition-opacity";
-
   return (
     <div
       onClick={onClose}
-      className={`fixed inset-0 z-[80] md:hidden transition-opacity duration-300 ${open ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+      className={`fixed inset-0 z-[90] md:hidden transition-opacity duration-300 ${open ? "opacity-100" : "opacity-0 pointer-events-none"}`}
       aria-hidden={!open}
     >
       <div className="absolute inset-0 bg-foreground/55 backdrop-blur-sm" />
       <aside
         onClick={(e) => e.stopPropagation()}
-        className={`absolute left-0 top-0 h-full w-[88%] max-w-[420px] bg-background shadow-2xl transition-transform duration-300 ease-out ${open ? "translate-x-0" : "-translate-x-full"} flex flex-col`}
+        className={`absolute left-0 top-0 h-full w-[88%] max-w-[400px] bg-background shadow-2xl transition-transform duration-300 ease-out flex flex-col ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
         {/* header */}
-        <div className="flex items-center justify-between px-7 h-20 border-b border-border">
-          <Link to="/" onClick={onClose} className="font-display text-2xl tracking-tight">
+        <div className="flex items-center justify-between px-7 h-16 border-b border-border shrink-0">
+          <Link to="/" onClick={onClose} className="font-display text-xl tracking-tight">
             ОБЛАКО
           </Link>
           <button
             onClick={onClose}
             aria-label="Закрыть"
-            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-secondary transition-colors"
+            className="w-10 h-10 -mr-2 flex items-center justify-center hover:bg-secondary transition-colors"
           >
-            <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M2 2L14 14M14 2L2 14" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
             </svg>
           </button>
         </div>
 
-        {/* main nav */}
-        <nav className="flex-1 overflow-y-auto px-7 py-6">
-          <ul className="divide-y divide-border/70">
+        {/* nav */}
+        <nav className="flex-1 overflow-y-auto py-2">
+          <ul>
             {NAV_LINKS.map((l) => (
               <li key={l.to}>
-                <Link to={l.to} onClick={onClose} className={linkBase}>
+                <Link
+                  to={l.to}
+                  onClick={onClose}
+                  className="flex items-center px-7 py-4 font-display text-2xl text-foreground border-b border-border/60 hover:bg-secondary transition-colors"
+                >
                   {t(l.key)}
                 </Link>
               </li>
             ))}
             <li>
-              <Link to="/cart" onClick={onClose} className={linkBase + " flex items-center justify-between"}>
+              <Link
+                to="/cart"
+                onClick={onClose}
+                className="flex items-center justify-between px-7 py-4 font-display text-2xl text-foreground border-b border-border/60 hover:bg-secondary transition-colors"
+              >
                 <span>{t("nav.cart")}</span>
-                <span className="text-base text-muted-foreground tabular-nums">{count}</span>
+                <span className="text-sm text-muted-foreground tabular-nums">{count}</span>
               </Link>
             </li>
             <li>
-              <Link to="/account" onClick={onClose} className={linkBase}>
+              <Link
+                to="/account"
+                onClick={onClose}
+                className="flex items-center px-7 py-4 font-display text-2xl text-foreground border-b border-border/60 hover:bg-secondary transition-colors"
+              >
                 {user ? user.name.split(" ")[0] : t("nav.account")}
               </Link>
             </li>
             {user?.role === "admin" && (
               <li>
-                <Link to="/admin" onClick={onClose} className={linkBase}>
+                <Link
+                  to="/admin"
+                  onClick={onClose}
+                  className="flex items-center px-7 py-4 font-display text-2xl text-foreground border-b border-border/60 hover:bg-secondary transition-colors"
+                >
                   {t("nav.admin")}
                 </Link>
               </li>
             )}
-            <li>
-              <Link to="/privacy" onClick={onClose} className="block py-4 text-sm text-muted-foreground hover:text-foreground">
-                Политика конфиденциальности
-              </Link>
-            </li>
           </ul>
+          <div className="px-7 pt-6 pb-2">
+            <Link
+              to="/privacy"
+              onClick={onClose}
+              className="block text-xs text-muted-foreground hover:text-foreground"
+            >
+              Политика конфиденциальности
+            </Link>
+          </div>
         </nav>
 
-        {/* footer actions */}
-        <div className="px-7 py-6 border-t border-border flex items-center justify-between gap-4 bg-secondary/40">
+        {/* footer */}
+        <div className="px-7 py-5 border-t border-border flex items-center justify-between gap-4 bg-secondary/40 shrink-0">
           <button
             onClick={() => setLang(lang === "ru" ? "en" : "ru")}
-            className="flex items-center gap-2 text-xs uppercase tracking-[0.25em]"
+            className="flex items-center gap-2 text-[11px] uppercase tracking-[0.25em]"
           >
-            <span className={lang === "ru" ? "font-semibold" : "text-muted-foreground"}>RU</span>
+            <span className={lang === "ru" ? "font-semibold text-foreground" : "text-muted-foreground"}>RU</span>
             <span className="text-muted-foreground">/</span>
-            <span className={lang === "en" ? "font-semibold" : "text-muted-foreground"}>EN</span>
+            <span className={lang === "en" ? "font-semibold text-foreground" : "text-muted-foreground"}>EN</span>
           </button>
           {user ? (
             <button
               onClick={async () => { await api.logout(); window.location.href = "/"; }}
-              className="text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-foreground"
+              className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground hover:text-foreground"
             >
               {t("auth.logout")}
             </button>
@@ -130,7 +161,7 @@ function MobileDrawer({
             <Link
               to="/account"
               onClick={onClose}
-              className="text-xs uppercase tracking-[0.25em] font-semibold"
+              className="text-[11px] uppercase tracking-[0.25em] font-semibold"
             >
               {t("auth.login")}
             </Link>
@@ -139,57 +170,88 @@ function MobileDrawer({
       </aside>
     </div>
   );
-  void variant;
 }
 
-/** Глобальный header (на всех страницах кроме / и /admin) */
-export function SiteHeader() {
+/* ---------------------------------------------------------------- */
+/*  Универсальный хедер. variant:                                    */
+/*   • "solid"   — белый sticky header (внутренние страницы)         */
+/*   • "overlay" — поверх hero, светлый текст (главная)              */
+/* ---------------------------------------------------------------- */
+export function SiteHeader({ variant = "solid" }: { variant?: "solid" | "overlay" }) {
   const { t, lang, setLang } = useI18n();
   const { user, count } = useChrome();
   const [open, setOpen] = useState(false);
 
+  const isOverlay = variant === "overlay";
+
+  const wrapperCls = isOverlay
+    ? "absolute top-0 left-0 right-0 z-40 text-background"
+    : "sticky top-0 z-40 bg-background/90 backdrop-blur border-b border-border text-foreground";
+
+  const linkCls = isOverlay
+    ? "hover:opacity-70 transition-opacity"
+    : "hover-underline";
+
+  const burgerColor = isOverlay ? "bg-background" : "bg-foreground";
+
   return (
-    <header className="sticky top-0 z-40 bg-background/85 backdrop-blur border-b border-border">
-      <div className="container-rhode grid grid-cols-3 items-center h-16">
-        <div className="flex items-center">
-          <button
-            onClick={() => setOpen(true)}
-            aria-label="Меню"
-            className="md:hidden flex flex-col gap-[5px] p-2 -ml-2"
-          >
-            <span className="w-5 h-px bg-foreground" />
-            <span className="w-5 h-px bg-foreground" />
-            <span className="w-5 h-px bg-foreground" />
-          </button>
-          <nav className="hidden md:flex items-center gap-8 text-sm">
-            {NAV_LINKS.map((l) => (
-              <Link key={l.to} to={l.to} className="hover-underline" activeProps={{ className: "font-medium" }}>
-                {t(l.key)}
+    <header className={wrapperCls}>
+      <div className={isOverlay ? "px-5 md:px-10" : "container-rhode"}>
+        <div className="grid grid-cols-3 items-center h-16 md:h-20">
+          {/* left: burger (mobile) + nav (desktop) */}
+          <div className="flex items-center">
+            <button
+              onClick={() => setOpen(true)}
+              aria-label="Меню"
+              className="md:hidden flex flex-col gap-[5px] p-2 -ml-2"
+            >
+              <span className={`block w-5 h-px ${burgerColor}`} />
+              <span className={`block w-5 h-px ${burgerColor}`} />
+              <span className={`block w-5 h-px ${burgerColor}`} />
+            </button>
+            <nav className="hidden md:flex items-center gap-7 text-xs uppercase tracking-[0.2em]">
+              {NAV_LINKS.slice(0, 5).map((l) => (
+                <Link key={l.to} to={l.to} className={linkCls} activeProps={{ className: "font-semibold" }}>
+                  {t(l.key)}
+                </Link>
+              ))}
+            </nav>
+          </div>
+
+          {/* center: logo */}
+          <div className="flex justify-center">
+            <Link to="/" className="font-display text-xl md:text-2xl tracking-tight whitespace-nowrap">
+              ОБЛАКО
+            </Link>
+          </div>
+
+          {/* right: actions */}
+          <div className="flex items-center justify-end gap-4 md:gap-6 text-xs uppercase tracking-[0.2em]">
+            <button
+              onClick={() => setLang(lang === "ru" ? "en" : "ru")}
+              className={`hidden sm:inline ${linkCls}`}
+            >
+              {lang === "ru" ? "EN" : "RU"}
+            </button>
+            {user?.role === "admin" && (
+              <Link to="/admin" className={`hidden md:inline ${linkCls}`}>
+                {t("nav.admin")}
               </Link>
-            ))}
-          </nav>
-        </div>
-
-        <div className="flex justify-center">
-          <Link to="/" className="font-display text-2xl tracking-tight">ОБЛАКО</Link>
-        </div>
-
-        <div className="flex items-center justify-end gap-5 text-sm">
-          <button
-            onClick={() => setLang(lang === "ru" ? "en" : "ru")}
-            className="hidden sm:inline uppercase tracking-widest text-xs hover-underline"
-          >
-            {lang === "ru" ? "EN" : "RU"}
-          </button>
-          {user?.role === "admin" && (
-            <Link to="/admin" className="hidden md:inline hover-underline">{t("nav.admin")}</Link>
-          )}
-          <Link to="/account" className="hidden md:inline hover-underline">
-            {user ? user.name.split(" ")[0] : t("nav.account")}
-          </Link>
-          <Link to="/cart" className="hover-underline">
-            {t("nav.cart")} ({count})
-          </Link>
+            )}
+            <Link to="/account" className={`hidden md:inline ${linkCls}`}>
+              {user ? user.name.split(" ")[0] : t("nav.account")}
+            </Link>
+            <Link to="/cart" className={`flex items-center gap-1 ${linkCls}`}>
+              <span className="hidden sm:inline">{t("nav.cart")}</span>
+              <span className="sm:hidden">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M6 7h12l-1 13H7L6 7z" />
+                  <path d="M9 7V5a3 3 0 0 1 6 0v2" />
+                </svg>
+              </span>
+              <span className="tabular-nums">({count})</span>
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -198,76 +260,9 @@ export function SiteHeader() {
   );
 }
 
-/** Узкая полоса сверху с центрированным логотипом — над hero */
-export function HomeTopBar() {
-  return (
-    <div className="w-full bg-background border-b border-border">
-      <div className="container-rhode flex items-center justify-center h-12">
-        <Link to="/" className="font-display text-xl md:text-2xl tracking-tight">
-          ОБЛАКО
-        </Link>
-      </div>
-    </div>
-  );
-}
-
-/**
- * Навигация для главной — рендерится ВНУТРИ relative-контейнера hero-картинки.
- * Текст белый, бургер слева на мобилке.
- */
-export function HomeHeroNav() {
-  const { t, lang, setLang } = useI18n();
-  const { user, count } = useChrome();
-  const [open, setOpen] = useState(false);
-
-  return (
-    <>
-      <nav className="absolute top-0 left-0 right-0 z-30 px-6 md:px-10 h-16 md:h-20 flex items-center justify-between text-background">
-        <div className="flex items-center gap-8">
-          <button
-            onClick={() => setOpen(true)}
-            aria-label="Меню"
-            className="md:hidden flex flex-col gap-[5px] p-2 -ml-2"
-          >
-            <span className="w-6 h-px bg-background" />
-            <span className="w-6 h-px bg-background" />
-            <span className="w-6 h-px bg-background" />
-          </button>
-          <div className="hidden md:flex items-center gap-10 text-xs uppercase tracking-[0.25em] font-medium">
-            {NAV_LINKS.map((l) => (
-              <Link key={l.to} to={l.to} className="hover:opacity-70 transition-opacity">
-                {t(l.key)}
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex items-center gap-5 md:gap-8 text-xs uppercase tracking-[0.25em] font-medium">
-          <button
-            onClick={() => setLang(lang === "ru" ? "en" : "ru")}
-            className="hidden sm:inline hover:opacity-70 transition-opacity"
-          >
-            {lang === "ru" ? "EN" : "RU"}
-          </button>
-          {user?.role === "admin" && (
-            <Link to="/admin" className="hidden md:inline hover:opacity-70 transition-opacity">
-              {t("nav.admin")}
-            </Link>
-          )}
-          <Link to="/account" className="hidden md:inline hover:opacity-70 transition-opacity">
-            {user ? user.name.split(" ")[0] : t("nav.account")}
-          </Link>
-          <Link to="/cart" className="hover:opacity-70 transition-opacity">
-            {t("nav.cart")} ({count})
-          </Link>
-        </div>
-      </nav>
-
-      <MobileDrawer open={open} onClose={() => setOpen(false)} user={user} count={count} />
-    </>
-  );
-}
-
+/* ---------------------------------------------------------------- */
+/*  Footer                                                            */
+/* ---------------------------------------------------------------- */
 export function SiteFooter() {
   const { t } = useI18n();
   return (
