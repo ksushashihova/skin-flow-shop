@@ -391,6 +391,8 @@ const EMPTY_PRODUCT: Omit<Product, "id"> = {
   images: [""],
   stock: 0,
   category: "skin",
+  videoUrl: "",
+  howToUse: "",
 };
 
 function ProductsPanel() {
