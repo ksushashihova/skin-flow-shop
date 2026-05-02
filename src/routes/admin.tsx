@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { api, type Order, type OrderStatus, type User, type Product, type Post, type Review, type Bundle, type GiftCard, type Subscriber, type PromoCode } from "@/lib/api";
+import { api, type Order, type OrderStatus, type User, type Product, type ProductCategory, type Post, type Review, type Bundle, type GiftCard, type Subscriber, type PromoCode } from "@/lib/api";
 import { useI18n, formatPrice } from "@/lib/i18n";
 
 export const Route = createFileRoute("/admin")({
@@ -32,7 +32,7 @@ const DELIVERY_LABEL: Record<Order["deliveryMethod"], string> = {
   post: "Почта России",
 };
 
-type Tab = "orders" | "users" | "products" | "posts" | "reviews" | "bundles" | "gift" | "promos" | "subs";
+type Tab = "orders" | "users" | "products" | "categories" | "posts" | "reviews" | "bundles" | "gift" | "promos" | "subs";
 
 type OrdersView =
   | { kind: "list" }
@@ -57,6 +57,7 @@ function Admin() {
     { id: "orders", label: "Заказы" },
     { id: "users", label: "Пользователи" },
     { id: "products", label: "Товары" },
+    { id: "categories", label: "Категории" },
     { id: "posts", label: "Журнал" },
     { id: "reviews", label: "Отзывы" },
     { id: "bundles", label: "Наборы" },
@@ -97,6 +98,7 @@ function Admin() {
       {tab === "orders" && <OrdersPanel lang={lang} switchToUser={(u) => { setTab("users"); /* user view handled below */ window.dispatchEvent(new CustomEvent("admin-open-user", { detail: u })); }} />}
       {tab === "users" && <UsersPanel lang={lang} />}
       {tab === "products" && <ProductsPanel />}
+      {tab === "categories" && <CategoriesPanel />}
       {tab === "posts" && <PostsPanel />}
       {tab === "reviews" && <ReviewsPanel />}
       {tab === "bundles" && <BundlesPanel />}
