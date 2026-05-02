@@ -28,12 +28,10 @@ function Journal() {
             key={p.slug}
             to="/journal/$slug"
             params={{ slug: p.slug }}
-            target="_blank"
-            rel="noopener noreferrer"
             className="group block"
           >
             <div className="aspect-[4/5] overflow-hidden bg-muted">
-              <img src={p.cover} alt="" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+              <img src={p.cover} alt="" loading="lazy" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
             </div>
             <div className="text-xs uppercase tracking-widest text-muted-foreground mt-4">{p.category}</div>
             <h2 className="font-display text-2xl mt-2">{p.title}</h2>
