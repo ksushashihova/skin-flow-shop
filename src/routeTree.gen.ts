@@ -23,7 +23,7 @@ import { Route as AccountRouteImport } from './routes/account'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProductSlugRouteImport } from './routes/product.$slug'
-import { Route as JournalSlugRouteImport } from './routes/journal.$slug'
+import { Route as JournalSlugRouteImport } from './routes/journal_.$slug'
 import { Route as BundlesSlugRouteImport } from './routes/bundles.$slug'
 
 const ShopRoute = ShopRouteImport.update({
@@ -97,9 +97,9 @@ const ProductSlugRoute = ProductSlugRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const JournalSlugRoute = JournalSlugRouteImport.update({
-  id: '/$slug',
-  path: '/$slug',
-  getParentRoute: () => JournalRoute,
+  id: '/journal_/$slug',
+  path: '/journal/$slug',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const BundlesSlugRoute = BundlesSlugRouteImport.update({
   id: '/$slug',
@@ -117,7 +117,7 @@ export interface FileRoutesByFullPath {
   '/checkout': typeof CheckoutRoute
   '/faq': typeof FaqRoute
   '/gift-cards': typeof GiftCardsRoute
-  '/journal': typeof JournalRouteWithChildren
+  '/journal': typeof JournalRoute
   '/privacy': typeof PrivacyRoute
   '/quiz': typeof QuizRoute
   '/shop': typeof ShopRoute
@@ -135,7 +135,7 @@ export interface FileRoutesByTo {
   '/checkout': typeof CheckoutRoute
   '/faq': typeof FaqRoute
   '/gift-cards': typeof GiftCardsRoute
-  '/journal': typeof JournalRouteWithChildren
+  '/journal': typeof JournalRoute
   '/privacy': typeof PrivacyRoute
   '/quiz': typeof QuizRoute
   '/shop': typeof ShopRoute
@@ -154,12 +154,12 @@ export interface FileRoutesById {
   '/checkout': typeof CheckoutRoute
   '/faq': typeof FaqRoute
   '/gift-cards': typeof GiftCardsRoute
-  '/journal': typeof JournalRouteWithChildren
+  '/journal': typeof JournalRoute
   '/privacy': typeof PrivacyRoute
   '/quiz': typeof QuizRoute
   '/shop': typeof ShopRoute
   '/bundles/$slug': typeof BundlesSlugRoute
-  '/journal/$slug': typeof JournalSlugRoute
+  '/journal_/$slug': typeof JournalSlugRoute
   '/product/$slug': typeof ProductSlugRoute
 }
 export interface FileRouteTypes {
@@ -215,7 +215,7 @@ export interface FileRouteTypes {
     | '/quiz'
     | '/shop'
     | '/bundles/$slug'
-    | '/journal/$slug'
+    | '/journal_/$slug'
     | '/product/$slug'
   fileRoutesById: FileRoutesById
 }
@@ -229,10 +229,11 @@ export interface RootRouteChildren {
   CheckoutRoute: typeof CheckoutRoute
   FaqRoute: typeof FaqRoute
   GiftCardsRoute: typeof GiftCardsRoute
-  JournalRoute: typeof JournalRouteWithChildren
+  JournalRoute: typeof JournalRoute
   PrivacyRoute: typeof PrivacyRoute
   QuizRoute: typeof QuizRoute
   ShopRoute: typeof ShopRoute
+  JournalSlugRoute: typeof JournalSlugRoute
   ProductSlugRoute: typeof ProductSlugRoute
 }
 
@@ -336,12 +337,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProductSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/journal/$slug': {
-      id: '/journal/$slug'
-      path: '/$slug'
+    '/journal_/$slug': {
+      id: '/journal_/$slug'
+      path: '/journal/$slug'
       fullPath: '/journal/$slug'
       preLoaderRoute: typeof JournalSlugRouteImport
-      parentRoute: typeof JournalRoute
+      parentRoute: typeof rootRouteImport
     }
     '/bundles/$slug': {
       id: '/bundles/$slug'
@@ -364,17 +365,6 @@ const BundlesRouteChildren: BundlesRouteChildren = {
 const BundlesRouteWithChildren =
   BundlesRoute._addFileChildren(BundlesRouteChildren)
 
-interface JournalRouteChildren {
-  JournalSlugRoute: typeof JournalSlugRoute
-}
-
-const JournalRouteChildren: JournalRouteChildren = {
-  JournalSlugRoute: JournalSlugRoute,
-}
-
-const JournalRouteWithChildren =
-  JournalRoute._addFileChildren(JournalRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
@@ -385,10 +375,11 @@ const rootRouteChildren: RootRouteChildren = {
   CheckoutRoute: CheckoutRoute,
   FaqRoute: FaqRoute,
   GiftCardsRoute: GiftCardsRoute,
-  JournalRoute: JournalRouteWithChildren,
+  JournalRoute: JournalRoute,
   PrivacyRoute: PrivacyRoute,
   QuizRoute: QuizRoute,
   ShopRoute: ShopRoute,
+  JournalSlugRoute: JournalSlugRoute,
   ProductSlugRoute: ProductSlugRoute,
 }
 export const routeTree = rootRouteImport

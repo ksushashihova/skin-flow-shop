@@ -119,6 +119,10 @@ export interface Post {
   category: string;
   date: string;
   body: string[];
+  /** Дополнительные изображения внутри статьи */
+  images?: string[];
+  /** Видео для встраивания (URL mp4 или YouTube/Vimeo embed) */
+  videoUrl?: string;
 }
 
 export interface Review {
@@ -171,7 +175,7 @@ export interface Subscriber {
 import { PRODUCTS as SEED_PRODUCTS } from "./products";
 import { POSTS as SEED_POSTS } from "./posts";
 
-const LS_KEY = "demo_state_v7";
+const LS_KEY = "demo_state_v8";
 
 interface DemoState {
   users: (User & { passwordHash: string })[];

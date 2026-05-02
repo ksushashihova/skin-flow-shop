@@ -4,6 +4,7 @@ import appCss from "../styles.css?url";
 import { I18nProvider } from "@/lib/i18n";
 import { api } from "@/lib/api";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
+import { Preloader } from "@/components/preloader";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -84,6 +85,7 @@ function RootComponent() {
 
   return (
     <I18nProvider>
+      <Preloader />
       <div className="min-h-screen flex flex-col">
         {!hideChrome && <SiteHeader variant={headerVariant} />}
         <main className="flex-1">

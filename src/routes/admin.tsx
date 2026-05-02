@@ -762,6 +762,8 @@ const EMPTY_POST: Post = {
   category: "Ритуалы",
   date: new Date().toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" }),
   body: [""],
+  images: [],
+  videoUrl: "",
 };
 
 function PostsPanel() {
@@ -886,6 +888,44 @@ function PostForm({
             value={data.body.join("\n\n")}
             onChange={(e) => set("body", e.target.value.split(/\n\s*\n/).map((s) => s.trim()).filter(Boolean))}
             rows={10}
+            className="w-full bg-background border border-border px-3 py-3"
+          />
+        </div>
+
+        <div className="md:col-span-2">
+          <label className="block text-xs uppercase tracking-widest text-muted-foreground mb-2">
+            Фотографии в статье (по одной ссылке в строке)
+          </label>
+          <textarea
+            value={(data.images ?? []).join("\n")}
+            onChange={(e) =>
+              set(
+                "images",
+                e.target.value.split(/\n+/).map((s) => s.trim()).filter(Boolean),
+              )
+            }
+            rows={4}
+            placeholder="https://...
+https://..."
+            className="w-full bg-background border border-border px-3 py-3 text-sm"
+          />
+          {data.images && data.images.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {data.images.map((src, i) => (
+                <img key={i} src={src} alt="" className="w-24 h-24 object-cover bg-muted" />
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="md:col-span-2">
+          <label className="block text-xs uppercase tracking-widest text-muted-foreground mb-2">
+            Видео (YouTube, Vimeo или прямая ссылка на mp4)
+          </label>
+          <input
+            value={data.videoUrl ?? ""}
+            onChange={(e) => set("videoUrl", e.target.value)}
+            placeholder="https://www.youtube.com/watch?v=..."
             className="w-full bg-background border border-border px-3 py-3"
           />
         </div>
