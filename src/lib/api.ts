@@ -119,6 +119,10 @@ export interface Post {
   category: string;
   date: string;
   body: string[];
+  /** Дополнительные изображения внутри статьи */
+  images?: string[];
+  /** Видео для встраивания (URL mp4 или YouTube/Vimeo embed) */
+  videoUrl?: string;
 }
 
 export interface Review {
