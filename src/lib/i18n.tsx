@@ -25,6 +25,8 @@ const dict = {
     "shop.search": "Поиск товаров",
     "product.add": "В корзину",
     "product.added": "Добавлено",
+    "product.inCart": "В корзине",
+    "product.removeHint": "Нажмите, чтобы убрать",
     "product.price": "Цена",
     "product.stock": "В наличии",
     "cart.title": "Корзина",
