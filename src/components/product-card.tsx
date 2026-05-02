@@ -64,8 +64,17 @@ export function ProductCard({ product }: { product: Product }) {
         <div className="aspect-[4/5] overflow-hidden bg-muted">
           <img
             src={product.images[0]}
+            srcSet={(() => {
+              const base = product.images[0];
+              if (!base.includes("images.unsplash.com")) return undefined;
+              const stripped = base.replace(/([?&])(w|q|fm)=[^&]+/g, "").replace(/&&+/g, "&").replace(/\?&/, "?");
+              const sep = stripped.includes("?") ? "&" : "?";
+              return [320, 480, 640, 800].map((w) => `${stripped}${sep}fm=webp&q=70&w=${w} ${w}w`).join(", ");
+            })()}
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             alt={name}
             loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
         </div>

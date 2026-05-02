@@ -56,7 +56,15 @@ function Index() {
         <div className="px-0 md:px-6 pt-0">
           <div className="relative w-full h-[80vh] min-h-[560px] md:h-[82vh] md:min-h-[660px] overflow-hidden bg-muted md:rounded-3xl">
             <img
-              src="https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=2200&q=80"
+              src="https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&fm=webp&w=1600&q=70"
+              srcSet={[
+                "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&fm=webp&w=640&q=65 640w",
+                "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&fm=webp&w=960&q=65 960w",
+                "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&fm=webp&w=1280&q=70 1280w",
+                "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&fm=webp&w=1600&q=70 1600w",
+                "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&fm=webp&w=2000&q=72 2000w",
+              ].join(", ")}
+              sizes="(max-width: 768px) 100vw, (max-width: 1280px) 100vw, 1600px"
               alt=""
               fetchPriority="high"
               decoding="async"

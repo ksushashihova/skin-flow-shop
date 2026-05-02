@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 
 /** Миниатюры баночек/тюбиков — крутятся в центре пока сайт грузится. */
 const THUMBS = [
-  "https://images.unsplash.com/photo-1631214540242-3cd8c4b0b3b8?auto=format&fit=crop&w=400&q=80",
-  "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=400&q=80",
-  "https://images.unsplash.com/photo-1570194065650-d99fb4bedf0a?auto=format&fit=crop&w=400&q=80",
-  "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=400&q=80",
-  "https://images.unsplash.com/photo-1612817288484-6f916006741a?auto=format&fit=crop&w=400&q=80",
-  "https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1631214540242-3cd8c4b0b3b8?auto=format&fit=crop&fm=webp&w=240&q=65",
+  "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&fm=webp&w=240&q=65",
+  "https://images.unsplash.com/photo-1570194065650-d99fb4bedf0a?auto=format&fit=crop&fm=webp&w=240&q=65",
+  "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&fm=webp&w=240&q=65",
+  "https://images.unsplash.com/photo-1612817288484-6f916006741a?auto=format&fit=crop&fm=webp&w=240&q=65",
+  "https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?auto=format&fit=crop&fm=webp&w=240&q=65",
 ];
 
 const SHOWN_KEY = "oblako-preloader-shown";
