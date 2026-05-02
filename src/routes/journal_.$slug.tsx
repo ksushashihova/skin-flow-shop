@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { POSTS as SEED_POSTS } from "@/lib/posts";
 import { useEffect, useState } from "react";
 import { api, type Post } from "@/lib/api";
