@@ -3,7 +3,7 @@ import { POSTS as SEED_POSTS } from "@/lib/posts";
 import { useEffect, useState } from "react";
 import { api, type Post } from "@/lib/api";
 
-export const Route = createFileRoute("/journal/$slug")({
+export const Route = createFileRoute("/journal_/$slug")({
   loader: ({ params }) => {
     // SSR fallback: ищем в seed; если нет — отдаём заглушку, клиент подтянет из api.
     const post =
