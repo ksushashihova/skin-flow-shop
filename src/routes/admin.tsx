@@ -762,6 +762,8 @@ const EMPTY_POST: Post = {
   category: "Ритуалы",
   date: new Date().toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" }),
   body: [""],
+  images: [],
+  videoUrl: "",
 };
 
 function PostsPanel() {
