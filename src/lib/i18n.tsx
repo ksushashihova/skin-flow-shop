@@ -79,6 +79,8 @@ const dict = {
     "shop.search": "Search products",
     "product.add": "Add to cart",
     "product.added": "Added",
+    "product.inCart": "In cart",
+    "product.removeHint": "Click to remove",
     "product.price": "Price",
     "product.stock": "In stock",
     "cart.title": "Cart",
