@@ -246,6 +246,9 @@ function save(s: DemoState) {
 function emitAuthChange() {
   if (typeof window !== "undefined") window.dispatchEvent(new Event("oblako-auth-change"));
 }
+function emitCartChange() {
+  if (typeof window !== "undefined") window.dispatchEvent(new Event("oblako-cart-change"));
+}
 
 function seedUsers(): (User & { passwordHash: string })[] {
   return [
