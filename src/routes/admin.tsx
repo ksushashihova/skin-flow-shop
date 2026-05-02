@@ -393,22 +393,70 @@ const EMPTY_PRODUCT: Omit<Product, "id"> = {
   price: 0,
   images: [""],
   stock: 0,
-  category: "skin",
+  category: "",
   videoUrl: "",
   howToUse: "",
 };
 
 function ProductsPanel() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [editing, setEditing] = useState<Product | null>(null);
   const [creating, setCreating] = useState(false);
+  const [filterCat, setFilterCat] = useState<string>("");
+  const [search, setSearch] = useState("");
 
-  const refresh = async () => setProducts(await api.listProducts());
+  const refresh = async () => {
+    setProducts(await api.listProducts());
+    setCategories(await api.listCategories());
+  };
   useEffect(() => {
     refresh();
     const i = setInterval(refresh, 2000);
     return () => clearInterval(i);
   }, []);
+
+  const catName = (id: string) => categories.find((c) => c.id === id)?.name_ru ?? id;
+
+  if (creating) {
+    return (
+      <ProductForm
+        initial={{ ...EMPTY_PRODUCT, id: "", category: categories[0]?.id ?? "" } as Product}
+        categories={categories}
+        title="Новый товар"
+        onCancel={() => setCreating(false)}
+        onSave={async (data) => {
+          const { id: _id, ...rest } = data;
+          void _id;
+          await api.adminCreateProduct(rest);
+          setCreating(false);
+          refresh();
+        }}
+      />
+    );
+  }
+  if (editing) {
+    return (
+      <ProductForm
+        initial={editing}
+        categories={categories}
+        title={`Редактировать: ${editing.name_ru}`}
+        onCancel={() => setEditing(null)}
+        onSave={async (data) => {
+          await api.adminUpdateProduct(editing.id, data);
+          setEditing(null);
+          refresh();
+        }}
+      />
+    );
+  }
+
+  const q = search.trim().toLowerCase();
+  const visible = products.filter((p) => {
+    if (filterCat && p.category !== filterCat) return false;
+    if (q && ![p.name_ru, p.name_en, p.tagline_ru, p.tagline_en].some((t) => t.toLowerCase().includes(q))) return false;
+    return true;
+  });
 
   if (creating) {
     return (
