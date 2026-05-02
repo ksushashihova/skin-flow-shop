@@ -1,7 +1,7 @@
 import type { Product } from "./api";
 
 const img = (seed: string) =>
-  `https://images.unsplash.com/${seed}?auto=format&fit=crop&w=1400&q=80`;
+  `https://images.unsplash.com/${seed}?auto=format&fit=crop&fm=webp&w=800&q=70`;
 
 export const PRODUCTS: Product[] = [
   {
