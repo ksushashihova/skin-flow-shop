@@ -53,7 +53,7 @@ function Index() {
     <div className="w-full overflow-x-hidden">
       {/* HERO — на десктопе картинка заезжает под nav-строку, лого остаётся сверху */}
       <section className="relative">
-        <div className="px-0 md:px-6 pt-0 md:-mt-12">
+        <div className="px-0 md:px-6 pt-0">
           <div className="relative w-full h-[80vh] min-h-[560px] md:h-[82vh] md:min-h-[660px] overflow-hidden bg-muted md:rounded-3xl">
             <img
               src="https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=2200&q=80"

@@ -184,11 +184,11 @@ export function SiteHeader({ variant = "solid" }: { variant?: "solid" | "overlay
 
   const isOverlay = variant === "overlay";
 
-  // Header всегда sticky с белой лого-строкой. На overlay nav-строка прозрачная и текст светлый.
   const wrapperCls = "sticky top-0 z-40 text-foreground";
   const logoBarCls = "bg-background/95 backdrop-blur";
+  // На overlay nav-bar выходит из потока (-mb-12 = -h-12), чтобы накладываться на hero
   const navBarCls = isOverlay
-    ? "text-background"
+    ? "relative z-10 -mb-12 text-background"
     : "bg-background/95 backdrop-blur border-b border-border text-foreground";
 
   const linkCls = isOverlay
