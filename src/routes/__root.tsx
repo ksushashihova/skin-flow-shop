@@ -58,7 +58,8 @@ function RootComponent() {
   const isAdmin = pathname.startsWith("/admin");
   // Главная имеет собственную «внутри-картинки» навигацию (стиль Rhode)
   const isHome = pathname === "/";
-  const hideChrome = isAdmin || isHome || isAdminSession || !authChecked;
+  const hideChrome = isAdmin || isAdminSession || !authChecked;
+  const headerVariant = isHome ? "overlay" : "solid";
 
   useEffect(() => {
     let alive = true;
@@ -84,7 +85,7 @@ function RootComponent() {
   return (
     <I18nProvider>
       <div className="min-h-screen flex flex-col">
-        {!hideChrome && <SiteHeader />}
+        {!hideChrome && <SiteHeader variant={headerVariant} />}
         <main className="flex-1">
           <Outlet />
         </main>
