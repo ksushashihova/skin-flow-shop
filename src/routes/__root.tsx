@@ -4,6 +4,7 @@ import appCss from "../styles.css?url";
 import { I18nProvider } from "@/lib/i18n";
 import { api } from "@/lib/api";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
+import { Preloader } from "@/components/preloader";
 
 export const Route = createRootRoute({
   head: () => ({
