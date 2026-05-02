@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { api, type Order, type OrderStatus, type User, type Product, type Post, type Review, type Bundle, type GiftCard, type Subscriber, type PromoCode } from "@/lib/api";
+import { api, type Order, type OrderStatus, type User, type Product, type ProductCategory, type Post, type Review, type Bundle, type GiftCard, type Subscriber, type PromoCode } from "@/lib/api";
 import { useI18n, formatPrice } from "@/lib/i18n";
 
 export const Route = createFileRoute("/admin")({
@@ -32,7 +32,7 @@ const DELIVERY_LABEL: Record<Order["deliveryMethod"], string> = {
   post: "Почта России",
 };
 
-type Tab = "orders" | "users" | "products" | "posts" | "reviews" | "bundles" | "gift" | "promos" | "subs";
+type Tab = "orders" | "users" | "products" | "categories" | "posts" | "reviews" | "bundles" | "gift" | "promos" | "subs";
 
 type OrdersView =
   | { kind: "list" }
@@ -57,6 +57,7 @@ function Admin() {
     { id: "orders", label: "Заказы" },
     { id: "users", label: "Пользователи" },
     { id: "products", label: "Товары" },
+    { id: "categories", label: "Категории" },
     { id: "posts", label: "Журнал" },
     { id: "reviews", label: "Отзывы" },
     { id: "bundles", label: "Наборы" },
@@ -97,6 +98,7 @@ function Admin() {
       {tab === "orders" && <OrdersPanel lang={lang} switchToUser={(u) => { setTab("users"); /* user view handled below */ window.dispatchEvent(new CustomEvent("admin-open-user", { detail: u })); }} />}
       {tab === "users" && <UsersPanel lang={lang} />}
       {tab === "products" && <ProductsPanel />}
+      {tab === "categories" && <CategoriesPanel />}
       {tab === "posts" && <PostsPanel />}
       {tab === "reviews" && <ReviewsPanel />}
       {tab === "bundles" && <BundlesPanel />}
@@ -391,27 +393,36 @@ const EMPTY_PRODUCT: Omit<Product, "id"> = {
   price: 0,
   images: [""],
   stock: 0,
-  category: "skin",
+  category: "",
   videoUrl: "",
   howToUse: "",
 };
 
 function ProductsPanel() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [editing, setEditing] = useState<Product | null>(null);
   const [creating, setCreating] = useState(false);
+  const [filterCat, setFilterCat] = useState<string>("");
+  const [search, setSearch] = useState("");
 
-  const refresh = async () => setProducts(await api.listProducts());
+  const refresh = async () => {
+    setProducts(await api.listProducts());
+    setCategories(await api.listCategories());
+  };
   useEffect(() => {
     refresh();
     const i = setInterval(refresh, 2000);
     return () => clearInterval(i);
   }, []);
 
+  const catName = (id: string) => categories.find((c) => c.id === id)?.name_ru ?? id;
+
   if (creating) {
     return (
       <ProductForm
-        initial={{ ...EMPTY_PRODUCT, id: "" } as Product}
+        initial={{ ...EMPTY_PRODUCT, id: "", category: categories[0]?.id ?? "" } as Product}
+        categories={categories}
         title="Новый товар"
         onCancel={() => setCreating(false)}
         onSave={async (data) => {
@@ -428,6 +439,7 @@ function ProductsPanel() {
     return (
       <ProductForm
         initial={editing}
+        categories={categories}
         title={`Редактировать: ${editing.name_ru}`}
         onCancel={() => setEditing(null)}
         onSave={async (data) => {
@@ -439,24 +451,54 @@ function ProductsPanel() {
     );
   }
 
+  const q = search.trim().toLowerCase();
+  const visible = products.filter((p) => {
+    if (filterCat && p.category !== filterCat) return false;
+    if (q && ![p.name_ru, p.name_en, p.tagline_ru, p.tagline_en].some((t) => t.toLowerCase().includes(q))) return false;
+    return true;
+  });
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div className="text-xs uppercase tracking-widest text-muted-foreground">Каталог · {products.length}</div>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+        <div className="text-xs uppercase tracking-widest text-muted-foreground">
+          Каталог · {visible.length} / {products.length}
+        </div>
         <button
           onClick={() => setCreating(true)}
-          className="text-xs uppercase tracking-widest bg-foreground text-background px-5 py-3 hover:opacity-90"
+          className="text-xs uppercase tracking-widest bg-foreground text-background px-5 py-3 hover:opacity-90 self-start md:self-auto"
         >
           + Добавить товар
         </button>
       </div>
+
+      <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-6">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Поиск по названию"
+          className="flex-1 bg-background border border-border px-3 py-2 text-sm"
+        />
+        <select
+          value={filterCat}
+          onChange={(e) => setFilterCat(e.target.value)}
+          className="bg-background border border-border px-3 py-2 text-sm md:min-w-[220px]"
+        >
+          <option value="">Все категории</option>
+          {categories.map((c) => (
+            <option key={c.id} value={c.id}>{c.name_ru}</option>
+          ))}
+        </select>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {products.map((p) => (
+        {visible.map((p) => (
           <div key={p.id} className="border border-border p-4 flex gap-4">
             <img src={p.images[0]} alt="" className="w-24 h-28 object-cover bg-muted shrink-0" />
             <div className="flex-1 min-w-0 flex flex-col">
               <div className="font-display text-lg leading-tight line-clamp-2">{p.name_ru}</div>
               <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{p.tagline_ru}</div>
+              <div className="text-[10px] uppercase tracking-widest text-muted-foreground mt-1">{catName(p.category)}</div>
               <div className="mt-auto flex items-center justify-between text-xs">
                 <div className="space-y-0.5">
                   <div className="tabular-nums">{p.price} ₽</div>
@@ -480,10 +522,126 @@ function ProductsPanel() {
   );
 }
 
+/* ----------------------------- CATEGORIES ----------------------------- */
+
+function CategoriesPanel() {
+  const [categories, setCategories] = useState<ProductCategory[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [nameRu, setNameRu] = useState("");
+  const [nameEn, setNameEn] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = async () => {
+    setCategories(await api.listCategories());
+    setProducts(await api.listProducts());
+  };
+  useEffect(() => { refresh(); }, []);
+
+  const countOf = (id: string) => products.filter((p) => p.category === id).length;
+
+  const create = async () => {
+    setError(null);
+    if (!nameRu.trim()) { setError("Укажите название"); return; }
+    try {
+      await api.adminCreateCategory({ name_ru: nameRu.trim(), name_en: nameEn.trim() || nameRu.trim() });
+      setNameRu(""); setNameEn("");
+      refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Ошибка");
+    }
+  };
+
+  const remove = async (id: string) => {
+    if (!confirm("Удалить категорию?")) return;
+    try {
+      await api.adminDeleteCategory(id);
+      refresh();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Ошибка");
+    }
+  };
+
+  const rename = async (id: string, patch: Partial<Pick<ProductCategory, "name_ru" | "name_en">>) => {
+    await api.adminUpdateCategory(id, patch);
+    refresh();
+  };
+
+  return (
+    <div>
+      <div className="text-xs uppercase tracking-widest text-muted-foreground mb-6">Категории · {categories.length}</div>
+
+      <div className="border border-border p-5 mb-8 max-w-xl">
+        <div className="font-display text-xl mb-4">Новая категория</div>
+        <div className="grid md:grid-cols-2 gap-3">
+          <input
+            value={nameRu}
+            onChange={(e) => setNameRu(e.target.value)}
+            placeholder="Название (рус)"
+            className="bg-background border border-border px-3 py-2 text-sm"
+          />
+          <input
+            value={nameEn}
+            onChange={(e) => setNameEn(e.target.value)}
+            placeholder="Название (англ)"
+            className="bg-background border border-border px-3 py-2 text-sm"
+          />
+        </div>
+        {error && <div className="text-destructive text-xs mt-2">{error}</div>}
+        <button
+          onClick={create}
+          className="mt-4 text-xs uppercase tracking-widest bg-foreground text-background px-5 py-2 hover:opacity-90"
+        >
+          + Добавить
+        </button>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[560px]">
+          <thead className="text-xs uppercase tracking-widest text-muted-foreground border-b border-border">
+            <tr>
+              <th className="text-left py-3">ID</th>
+              <th className="text-left">Название (рус)</th>
+              <th className="text-left">Название (англ)</th>
+              <th className="text-left">Товаров</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {categories.map((c) => (
+              <tr key={c.id}>
+                <td className="py-3 font-mono text-xs text-muted-foreground">{c.id}</td>
+                <td>
+                  <input
+                    defaultValue={c.name_ru}
+                    onBlur={(e) => { if (e.target.value !== c.name_ru) rename(c.id, { name_ru: e.target.value }); }}
+                    className="bg-background border border-border px-2 py-1 w-full"
+                  />
+                </td>
+                <td>
+                  <input
+                    defaultValue={c.name_en}
+                    onBlur={(e) => { if (e.target.value !== c.name_en) rename(c.id, { name_en: e.target.value }); }}
+                    className="bg-background border border-border px-2 py-1 w-full"
+                  />
+                </td>
+                <td className="tabular-nums">{countOf(c.id)}</td>
+                <td className="text-right">
+                  <button onClick={() => remove(c.id)} className="text-destructive hover:opacity-70 text-xs">Удалить</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 function ProductForm({
-  initial, title, onCancel, onSave,
+  initial, categories, title, onCancel, onSave,
 }: {
   initial: Product;
+  categories: ProductCategory[];
   title: string;
   onCancel: () => void;
   onSave: (data: Product) => void | Promise<void>;
@@ -506,13 +664,17 @@ function ProductForm({
           <label className="block text-xs uppercase tracking-widest text-muted-foreground mb-2">Категория</label>
           <select
             value={data.category}
-            onChange={(e) => set("category", e.target.value as Product["category"])}
+            onChange={(e) => set("category", e.target.value)}
             className="w-full bg-background border border-border px-3 py-3"
           >
-            <option value="skin">Уход за кожей</option>
-            <option value="lip">Для губ</option>
-            <option value="body">Для тела</option>
+            {categories.length === 0 && <option value="">— нет категорий —</option>}
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>{c.name_ru}</option>
+            ))}
           </select>
+          <div className="text-xs text-muted-foreground mt-2">
+            Управлять списком категорий можно во вкладке «Категории».
+          </div>
         </div>
         <div className="md:col-span-2">
           <label className="block text-xs uppercase tracking-widest text-muted-foreground mb-2">Изображения (по одному URL на строку)</label>

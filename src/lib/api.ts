@@ -48,9 +48,16 @@ export interface Product {
   price: number;
   images: string[];
   stock: number;
-  category: "lip" | "skin" | "body";
+  /** Category id; references ProductCategory.id */
+  category: string;
   videoUrl?: string;
   howToUse?: string;
+}
+
+export interface ProductCategory {
+  id: string;
+  name_ru: string;
+  name_en: string;
 }
 
 export interface CartItem {
@@ -164,11 +171,12 @@ export interface Subscriber {
 import { PRODUCTS as SEED_PRODUCTS } from "./products";
 import { POSTS as SEED_POSTS } from "./posts";
 
-const LS_KEY = "demo_state_v6";
+const LS_KEY = "demo_state_v7";
 
 interface DemoState {
   users: (User & { passwordHash: string })[];
   products: Product[];
+  categories: ProductCategory[];
   posts: Post[];
   cart: CartItem[];
   orders: Order[];
@@ -179,6 +187,14 @@ interface DemoState {
   promos: PromoCode[];
   subscribers: Subscriber[];
   sessionUserId: string | null;
+}
+
+function seedCategories(): ProductCategory[] {
+  return [
+    { id: "skin", name_ru: "Уход за кожей", name_en: "Skincare" },
+    { id: "lip", name_ru: "Для губ", name_en: "Lip care" },
+    { id: "body", name_ru: "Для тела", name_en: "Body" },
+  ];
 }
 
 function load(): DemoState {
@@ -193,6 +209,7 @@ function load(): DemoState {
       parsed.giftCards ??= [];
       parsed.promos ??= seedPromos();
       parsed.subscribers ??= [];
+      parsed.categories ??= seedCategories();
       return parsed;
     } catch { /* ignore */ }
   }
@@ -205,6 +222,7 @@ function seed(): DemoState {
   return {
     users: seedUsers(),
     products: [...SEED_PRODUCTS],
+    categories: seedCategories(),
     posts: [...SEED_POSTS],
     cart: [],
     orders: seedOrders(),
@@ -429,19 +447,57 @@ export const api = {
   },
 
   // -------- products --------
-  async listProducts(query = ""): Promise<Product[]> {
+  async listProducts(query = "", categoryId?: string): Promise<Product[]> {
     await delay(120);
     const s = load();
     const q = query.trim().toLowerCase();
-    if (!q) return s.products;
-    return s.products.filter((p) =>
-      [p.name_ru, p.name_en, p.tagline_ru, p.tagline_en].some((t) => t.toLowerCase().includes(q))
-    );
+    let list = s.products;
+    if (categoryId) list = list.filter((p) => p.category === categoryId);
+    if (q) {
+      list = list.filter((p) =>
+        [p.name_ru, p.name_en, p.tagline_ru, p.tagline_en].some((t) => t.toLowerCase().includes(q))
+      );
+    }
+    return list;
   },
   async getProduct(id: string): Promise<Product | null> {
     await delay(100);
     const s = load();
     return s.products.find((p) => p.id === id || p.slug === id) ?? null;
+  },
+
+  // -------- categories --------
+  async listCategories(): Promise<ProductCategory[]> {
+    return load().categories;
+  },
+  async adminCreateCategory(input: { name_ru: string; name_en: string; id?: string }): Promise<ProductCategory> {
+    const s = load();
+    const id = (input.id || input.name_ru || "cat")
+      .toLowerCase().trim()
+      .replace(/[^a-z0-9а-я]+/gi, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 32) || "cat_" + Math.random().toString(36).slice(2, 6);
+    if (s.categories.some((c) => c.id === id)) throw new Error("Категория с таким идентификатором уже существует");
+    const cat: ProductCategory = { id, name_ru: input.name_ru, name_en: input.name_en || input.name_ru };
+    s.categories.push(cat);
+    save(s);
+    return cat;
+  },
+  async adminUpdateCategory(id: string, patch: Partial<Omit<ProductCategory, "id">>): Promise<ProductCategory> {
+    const s = load();
+    const c = s.categories.find((x) => x.id === id);
+    if (!c) throw new Error("Категория не найдена");
+    Object.assign(c, patch);
+    save(s);
+    return c;
+  },
+  async adminDeleteCategory(id: string): Promise<void> {
+    const s = load();
+    if (s.products.some((p) => p.category === id)) {
+      throw new Error("Нельзя удалить категорию: к ней привязаны товары");
+    }
+    s.categories = s.categories.filter((c) => c.id !== id);
+    save(s);
   },
 
   // -------- cart --------
