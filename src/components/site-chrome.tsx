@@ -184,14 +184,11 @@ export function SiteHeader({ variant = "solid" }: { variant?: "solid" | "overlay
 
   const isOverlay = variant === "overlay";
 
-  // Header sticky с белой лого-строкой. На overlay nav-строка позиционируется absolutely
-  // поверх hero, чтобы пункты меню были на картинке (стиль Rhode).
-  const wrapperCls = isOverlay
-    ? "sticky top-0 z-40 text-foreground"
-    : "sticky top-0 z-40 text-foreground";
+  const wrapperCls = "sticky top-0 z-40 text-foreground";
   const logoBarCls = "bg-background/95 backdrop-blur";
+  // На overlay nav-bar выходит из потока (-mb-12 = -h-12), чтобы накладываться на hero
   const navBarCls = isOverlay
-    ? "absolute left-0 right-0 text-background"
+    ? "relative z-10 -mb-12 text-background"
     : "bg-background/95 backdrop-blur border-b border-border text-foreground";
 
   const linkCls = isOverlay
