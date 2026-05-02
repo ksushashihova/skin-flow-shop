@@ -521,6 +521,7 @@ export const api = {
     if (existing) existing.quantity += quantity;
     else s.cart.push({ id: "ci_" + Math.random().toString(36).slice(2, 8), productId, quantity });
     save(s);
+    emitCartChange();
     return s.cart;
   },
   async addBundleToCart(bundleId: string, quantity = 1): Promise<CartItem[]> {
@@ -531,6 +532,7 @@ export const api = {
     if (existing) existing.quantity += quantity;
     else s.cart.push({ id: "ci_" + Math.random().toString(36).slice(2, 8), bundleId, quantity });
     save(s);
+    emitCartChange();
     return s.cart;
   },
   async updateCart(itemId: string, quantity: number): Promise<CartItem[]> {
@@ -541,12 +543,14 @@ export const api = {
       else item.quantity = quantity;
     }
     save(s);
+    emitCartChange();
     return s.cart;
   },
   async removeFromCart(itemId: string): Promise<CartItem[]> {
     const s = load();
     s.cart = s.cart.filter((c) => c.id !== itemId);
     save(s);
+    emitCartChange();
     return s.cart;
   },
 
