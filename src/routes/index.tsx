@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import { api, type Product } from "@/lib/api";
+import { api, type Product, type Banner } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { ProductCard } from "@/components/product-card";
 
@@ -47,7 +47,11 @@ function LazyVisible({ children, rootMargin = "300px" }: { children: React.React
 function Index() {
   const { t } = useI18n();
   const [products, setProducts] = useState<Product[]>([]);
-  useEffect(() => { api.listProducts().then(setProducts); }, []);
+  const [banners, setBanners] = useState<Banner[]>([]);
+  useEffect(() => {
+    api.listProducts().then(setProducts);
+    api.listBanners().then((bs) => setBanners(bs.filter((b) => b.enabled)));
+  }, []);
 
   return (
     <div className="w-full overflow-x-hidden">
