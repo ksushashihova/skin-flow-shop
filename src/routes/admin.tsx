@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { api, type Order, type OrderStatus, type User, type Product, type ProductCategory, type Post, type Review, type Bundle, type GiftCard, type Subscriber, type PromoCode } from "@/lib/api";
+import { api, type Order, type OrderStatus, type User, type Product, type ProductCategory, type Post, type Review, type Bundle, type GiftCard, type Subscriber, type PromoCode, type Banner } from "@/lib/api";
 import { useI18n, formatPrice } from "@/lib/i18n";
 
 export const Route = createFileRoute("/admin")({
@@ -32,7 +32,7 @@ const DELIVERY_LABEL: Record<Order["deliveryMethod"], string> = {
   post: "Почта России",
 };
 
-type Tab = "orders" | "users" | "products" | "categories" | "posts" | "reviews" | "bundles" | "gift" | "promos" | "subs";
+type Tab = "orders" | "users" | "products" | "categories" | "posts" | "reviews" | "bundles" | "banners" | "gift" | "promos" | "subs";
 
 type OrdersView =
   | { kind: "list" }
@@ -61,6 +61,7 @@ function Admin() {
     { id: "posts", label: "Журнал" },
     { id: "reviews", label: "Отзывы" },
     { id: "bundles", label: "Наборы" },
+    { id: "banners", label: "Баннеры" },
     { id: "gift", label: "Сертификаты" },
     { id: "promos", label: "Промокоды" },
     { id: "subs", label: "Подписчики" },
@@ -102,6 +103,7 @@ function Admin() {
       {tab === "posts" && <PostsPanel />}
       {tab === "reviews" && <ReviewsPanel />}
       {tab === "bundles" && <BundlesPanel />}
+      {tab === "banners" && <BannersPanel />}
       {tab === "gift" && <GiftCardsPanel lang={lang} />}
       {tab === "promos" && <PromosPanel lang={lang} />}
       {tab === "subs" && <SubscribersPanel />}
@@ -1238,5 +1240,225 @@ function PromosPanel({ lang }: { lang: "ru" | "en" }) {
         </table>
       </div>
     </div>
+  );
+}
+
+/* ----------------------------- BANNERS ----------------------------- */
+
+const EMPTY_BANNER: Omit<Banner, "id"> = {
+  title: "",
+  subtitle: "",
+  image: "",
+  ctaLabel: "Подробнее",
+  ctaHref: "/shop",
+  textColor: "light",
+  enabled: true,
+  order: 1,
+};
+
+function BannersPanel() {
+  const [banners, setBanners] = useState<Banner[]>([]);
+  const [editing, setEditing] = useState<Banner | null>(null);
+  const [creating, setCreating] = useState(false);
+
+  const refresh = async () => setBanners(await api.adminListBanners());
+  useEffect(() => { refresh(); }, []);
+
+  if (creating) {
+    return (
+      <BannerForm
+        initial={{ ...EMPTY_BANNER, id: "", order: banners.length + 1 } as Banner}
+        title="Новый баннер"
+        onCancel={() => setCreating(false)}
+        onSave={async (data) => {
+          const { id: _id, ...rest } = data;
+          void _id;
+          await api.adminCreateBanner(rest);
+          setCreating(false);
+          refresh();
+        }}
+      />
+    );
+  }
+
+  if (editing) {
+    return (
+      <BannerForm
+        initial={editing}
+        title={`Редактировать: ${editing.title}`}
+        onCancel={() => setEditing(null)}
+        onSave={async (data) => {
+          await api.adminUpdateBanner(editing.id, data);
+          setEditing(null);
+          refresh();
+        }}
+      />
+    );
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6 gap-4">
+        <div className="text-xs uppercase tracking-widest text-muted-foreground">
+          Рекламные баннеры на главной · {banners.length}
+        </div>
+        <button
+          onClick={() => setCreating(true)}
+          className="text-xs uppercase tracking-widest bg-foreground text-background px-5 py-3"
+        >
+          + Добавить баннер
+        </button>
+      </div>
+      <p className="text-xs text-muted-foreground mb-6">
+        На главной странице отображаются первые 2 включённых баннера в порядке поля «Порядок».
+      </p>
+
+      <div className="grid md:grid-cols-2 gap-6">
+        {banners.length === 0 && (
+          <div className="text-sm text-muted-foreground py-12 text-center md:col-span-2 border border-dashed border-border">
+            Баннеров пока нет
+          </div>
+        )}
+        {banners.map((b) => (
+          <div key={b.id} className="border border-border overflow-hidden bg-background">
+            <div className="relative aspect-[16/9] bg-muted">
+              {b.image && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={b.image} alt={b.title} className="absolute inset-0 w-full h-full object-cover" />
+              )}
+              {!b.enabled && (
+                <div className="absolute top-2 left-2 bg-foreground/80 text-background text-[10px] uppercase tracking-widest px-2 py-1">
+                  Выключен
+                </div>
+              )}
+            </div>
+            <div className="p-4 space-y-2">
+              <div className="font-display text-lg">{b.title || "Без названия"}</div>
+              <div className="text-xs text-muted-foreground line-clamp-2">{b.subtitle}</div>
+              <div className="text-xs text-muted-foreground">
+                Ссылка: <span className="text-foreground">{b.ctaHref}</span> · Порядок: {b.order}
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setEditing(b)}
+                  className="text-xs uppercase tracking-widest hover-underline"
+                >
+                  Изменить
+                </button>
+                <button
+                  onClick={async () => {
+                    await api.adminUpdateBanner(b.id, { enabled: !b.enabled });
+                    refresh();
+                  }}
+                  className="text-xs uppercase tracking-widest hover-underline"
+                >
+                  {b.enabled ? "Выключить" : "Включить"}
+                </button>
+                <button
+                  onClick={async () => {
+                    if (confirm(`Удалить баннер «${b.title}»?`)) {
+                      await api.adminDeleteBanner(b.id);
+                      refresh();
+                    }
+                  }}
+                  className="text-xs uppercase tracking-widest text-destructive hover:opacity-70 ml-auto"
+                >
+                  Удалить
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function BannerForm({
+  initial, title, onCancel, onSave,
+}: {
+  initial: Banner;
+  title: string;
+  onCancel: () => void;
+  onSave: (data: Banner) => void | Promise<void>;
+}) {
+  const [data, setData] = useState<Banner>(initial);
+  const [err, setErr] = useState<string | null>(null);
+  const set = <K extends keyof Banner>(k: K, v: Banner[K]) => setData((d) => ({ ...d, [k]: v }));
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErr(null);
+    try {
+      if (!data.title.trim()) throw new Error("Введите заголовок");
+      if (!data.image.trim()) throw new Error("Добавьте URL изображения");
+      await onSave(data);
+    } catch (e) {
+      setErr((e as Error).message);
+    }
+  };
+
+  return (
+    <form onSubmit={submit} className="space-y-6 max-w-3xl">
+      <div className="flex items-center justify-between">
+        <h2 className="font-display text-3xl">{title}</h2>
+        <button type="button" onClick={onCancel} className="text-xs uppercase tracking-widest hover-underline">
+          ← Назад
+        </button>
+      </div>
+
+      <Field label="Заголовок" value={data.title} onChange={(v) => set("title", v)} />
+      <div>
+        <label className="block text-xs uppercase tracking-widest text-muted-foreground mb-2">Подзаголовок</label>
+        <textarea
+          value={data.subtitle}
+          onChange={(e) => set("subtitle", e.target.value)}
+          rows={2}
+          className="w-full bg-background border border-border px-3 py-3"
+        />
+      </div>
+      <Field label="URL изображения" value={data.image} onChange={(v) => set("image", v)} />
+      {data.image && (
+        <div className="aspect-[16/9] bg-muted overflow-hidden">
+          <img src={data.image} alt="" className="w-full h-full object-cover" />
+        </div>
+      )}
+      <div className="grid md:grid-cols-2 gap-4">
+        <Field label="Текст кнопки" value={data.ctaLabel} onChange={(v) => set("ctaLabel", v)} />
+        <Field label="Ссылка (href)" value={data.ctaHref} onChange={(v) => set("ctaHref", v)} />
+      </div>
+      <div className="grid md:grid-cols-3 gap-4">
+        <div>
+          <label className="block text-xs uppercase tracking-widest text-muted-foreground mb-2">Цвет текста</label>
+          <select
+            value={data.textColor}
+            onChange={(e) => set("textColor", e.target.value as "light" | "dark")}
+            className="w-full bg-background border border-border px-3 py-3"
+          >
+            <option value="light">Светлый</option>
+            <option value="dark">Тёмный</option>
+          </select>
+        </div>
+        <Field label="Порядок" type="number" value={String(data.order)} onChange={(v) => set("order", Number(v) || 0)} />
+        <div>
+          <label className="block text-xs uppercase tracking-widest text-muted-foreground mb-2">Статус</label>
+          <label className="flex items-center gap-2 h-[46px] px-3 border border-border bg-background">
+            <input type="checkbox" checked={data.enabled} onChange={(e) => set("enabled", e.target.checked)} />
+            <span className="text-sm">Показывать на сайте</span>
+          </label>
+        </div>
+      </div>
+
+      {err && <div className="text-sm text-destructive">{err}</div>}
+
+      <div className="flex gap-4">
+        <button type="submit" className="text-xs uppercase tracking-widest bg-foreground text-background px-6 py-3">
+          Сохранить
+        </button>
+        <button type="button" onClick={onCancel} className="text-xs uppercase tracking-widest border border-border px-6 py-3">
+          Отмена
+        </button>
+      </div>
+    </form>
   );
 }

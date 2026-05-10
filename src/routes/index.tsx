@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import { api, type Product } from "@/lib/api";
+import { api, type Product, type Banner } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { ProductCard } from "@/components/product-card";
 
@@ -47,7 +47,11 @@ function LazyVisible({ children, rootMargin = "300px" }: { children: React.React
 function Index() {
   const { t } = useI18n();
   const [products, setProducts] = useState<Product[]>([]);
-  useEffect(() => { api.listProducts().then(setProducts); }, []);
+  const [banners, setBanners] = useState<Banner[]>([]);
+  useEffect(() => {
+    api.listProducts().then(setProducts);
+    api.listBanners().then((bs) => setBanners(bs.filter((b) => b.enabled)));
+  }, []);
 
   return (
     <div className="w-full overflow-x-hidden">
@@ -121,6 +125,50 @@ function Index() {
           ))}
         </div>
       </section>
+
+      {/* PROMO BANNERS */}
+      {banners.length > 0 && (
+        <section className="container-rhode pb-8 md:pb-16">
+          <div className="grid md:grid-cols-2 gap-6">
+            {banners.slice(0, 2).map((b) => (
+              <a
+                key={b.id}
+                href={b.ctaHref}
+                className="group relative block overflow-hidden rounded-2xl aspect-[16/10] bg-muted"
+              >
+                <img
+                  src={b.image}
+                  alt={b.title}
+                  loading="lazy"
+                  decoding="async"
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+                <div
+                  className={`absolute inset-0 ${
+                    b.textColor === "light"
+                      ? "bg-gradient-to-t from-foreground/65 via-foreground/20 to-transparent"
+                      : "bg-gradient-to-t from-background/70 via-background/20 to-transparent"
+                  }`}
+                />
+                <div
+                  className={`absolute inset-0 p-6 md:p-10 flex flex-col justify-end ${
+                    b.textColor === "light" ? "text-background" : "text-foreground"
+                  }`}
+                >
+                  <div className="font-display text-2xl md:text-3xl leading-tight">{b.title}</div>
+                  {b.subtitle && (
+                    <p className="mt-2 text-sm opacity-90 max-w-md">{b.subtitle}</p>
+                  )}
+                  <span className="inline-flex items-center mt-4 text-[11px] uppercase tracking-[0.25em]">
+                    {b.ctaLabel}
+                    <span className="ml-2 transition-transform group-hover:translate-x-1">→</span>
+                  </span>
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* PHILOSOPHY (lazy, ниже фолда) */}
       <LazyVisible>
