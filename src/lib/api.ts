@@ -172,10 +172,23 @@ export interface Subscriber {
   createdAt: string;
 }
 
+export interface Banner {
+  id: string;
+  title: string;
+  subtitle: string;
+  image: string;
+  ctaLabel: string;
+  ctaHref: string;
+  /** Цвет текста поверх картинки */
+  textColor: "light" | "dark";
+  enabled: boolean;
+  order: number;
+}
+
 import { PRODUCTS as SEED_PRODUCTS } from "./products";
 import { POSTS as SEED_POSTS } from "./posts";
 
-const LS_KEY = "demo_state_v8";
+const LS_KEY = "demo_state_v9";
 
 interface DemoState {
   users: (User & { passwordHash: string })[];
@@ -190,6 +203,7 @@ interface DemoState {
   giftCards: GiftCard[];
   promos: PromoCode[];
   subscribers: Subscriber[];
+  banners: Banner[];
   sessionUserId: string | null;
 }
 
@@ -214,6 +228,7 @@ function load(): DemoState {
       parsed.promos ??= seedPromos();
       parsed.subscribers ??= [];
       parsed.categories ??= seedCategories();
+      parsed.banners ??= seedBanners();
       return parsed;
     } catch { /* ignore */ }
   }
@@ -236,6 +251,7 @@ function seed(): DemoState {
     giftCards: [],
     promos: seedPromos(),
     subscribers: [],
+    banners: seedBanners(),
     sessionUserId: null,
   };
 }
@@ -335,6 +351,32 @@ function seedBundles(): Bundle[] {
 function seedPromos(): PromoCode[] {
   return [
     { code: "WELCOME10", percent: 10, description: "Скидка 10% за подписку на рассылку" },
+  ];
+}
+function seedBanners(): Banner[] {
+  return [
+    {
+      id: "bn_new",
+      title: "Новая коллекция",
+      subtitle: "Откройте обновлённую линию ухода — премиальные текстуры и чистые формулы.",
+      image: "https://images.unsplash.com/photo-1570554886111-e80fcca6a029?auto=format&fit=crop&fm=webp&w=1200&q=72",
+      ctaLabel: "Смотреть",
+      ctaHref: "/shop",
+      textColor: "light",
+      enabled: true,
+      order: 1,
+    },
+    {
+      id: "bn_gift",
+      title: "Подарочные сертификаты",
+      subtitle: "Идеальный подарок — пусть выберут сами. Номиналы от 1 000 ₽.",
+      image: "https://images.unsplash.com/photo-1512496015851-a90fb38ba796?auto=format&fit=crop&fm=webp&w=1200&q=72",
+      ctaLabel: "Оформить",
+      ctaHref: "/gift-cards",
+      textColor: "light",
+      enabled: true,
+      order: 2,
+    },
   ];
 }
 
