@@ -964,4 +964,33 @@ export const api = {
     save(s);
     return { ok: true };
   },
+
+  // -------- banners --------
+  async listBanners(): Promise<Banner[]> {
+    return [...load().banners].sort((a, b) => a.order - b.order);
+  },
+  async adminListBanners(): Promise<Banner[]> {
+    return [...load().banners].sort((a, b) => a.order - b.order);
+  },
+  async adminCreateBanner(input: Omit<Banner, "id">): Promise<Banner> {
+    const s = load();
+    const b: Banner = { ...input, id: "bn_" + Math.random().toString(36).slice(2, 8) };
+    s.banners.push(b);
+    save(s);
+    return b;
+  },
+  async adminUpdateBanner(id: string, patch: Partial<Banner>): Promise<Banner> {
+    const s = load();
+    const b = s.banners.find((x) => x.id === id);
+    if (!b) throw new Error("Баннер не найден");
+    Object.assign(b, patch);
+    save(s);
+    return b;
+  },
+  async adminDeleteBanner(id: string): Promise<{ ok: true }> {
+    const s = load();
+    s.banners = s.banners.filter((b) => b.id !== id);
+    save(s);
+    return { ok: true };
+  },
 };
