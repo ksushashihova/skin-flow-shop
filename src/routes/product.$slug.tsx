@@ -42,7 +42,7 @@ function ProductPage() {
       </Link>
       <div className="grid md:grid-cols-2 gap-12 mt-8">
         <div className="space-y-4">
-          {product.images.map((src, i) => (
+          {product.images.map((src: string, i: number) => (
             <img key={i} src={src} alt={name} className="w-full aspect-[4/5] object-cover" />
           ))}
         </div>

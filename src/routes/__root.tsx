@@ -5,6 +5,7 @@ import { I18nProvider } from "@/lib/i18n";
 import { api } from "@/lib/api";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 import { Preloader } from "@/components/preloader";
+import { CookieBanner } from "@/components/cookie-banner";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -94,6 +95,7 @@ function RootComponent() {
         </main>
         {!isAdmin && <SiteFooter />}
       </div>
+      {!hideChrome && <CookieBanner />}
     </I18nProvider>
   );
 }

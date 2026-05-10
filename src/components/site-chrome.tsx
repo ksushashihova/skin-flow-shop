@@ -312,7 +312,16 @@ export function SiteFooter() {
             <li><Link to="/about" className="hover-underline">О бренде</Link></li>
             <li><Link to="/journal" className="hover-underline">Журнал</Link></li>
             <li><Link to="/account" className="hover-underline">Личный кабинет</Link></li>
+            <li><Link to="/contacts" className="hover-underline">Контакты и реквизиты</Link></li>
+            <li><Link to="/returns" className="hover-underline">Возврат и обмен</Link></li>
+          </ul>
+        </div>
+        <div>
+          <div className="uppercase text-xs tracking-widest mb-3 text-muted-foreground">Документы</div>
+          <ul className="space-y-2">
+            <li><Link to="/offer" className="hover-underline">Публичная оферта</Link></li>
             <li><Link to="/privacy" className="hover-underline">Политика конфиденциальности</Link></li>
+            <li><Link to="/consent" className="hover-underline">Согласие на обработку ПДн</Link></li>
           </ul>
         </div>
         <NewsletterWidget />
