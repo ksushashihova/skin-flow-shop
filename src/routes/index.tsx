@@ -131,9 +131,9 @@ function Index() {
         <section className="container-rhode pb-8 md:pb-16">
           <div className="grid md:grid-cols-2 gap-6">
             {banners.slice(0, 2).map((b) => (
-              <Link
+              <a
                 key={b.id}
-                to={b.ctaHref}
+                href={b.ctaHref}
                 className="group relative block overflow-hidden rounded-2xl aspect-[16/10] bg-muted"
               >
                 <img
@@ -164,7 +164,7 @@ function Index() {
                     <span className="ml-2 transition-transform group-hover:translate-x-1">→</span>
                   </span>
                 </div>
-              </Link>
+              </a>
             ))}
           </div>
         </section>
