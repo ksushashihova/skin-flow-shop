@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { api, type Order, type OrderStatus, type User, type Product, type ProductCategory, type Post, type Review, type Bundle, type GiftCard, type Subscriber, type PromoCode } from "@/lib/api";
+import { api, type Order, type OrderStatus, type User, type Product, type ProductCategory, type Post, type Review, type Bundle, type GiftCard, type Subscriber, type PromoCode, type Banner } from "@/lib/api";
 import { useI18n, formatPrice } from "@/lib/i18n";
 
 export const Route = createFileRoute("/admin")({
@@ -32,7 +32,7 @@ const DELIVERY_LABEL: Record<Order["deliveryMethod"], string> = {
   post: "Почта России",
 };
 
-type Tab = "orders" | "users" | "products" | "categories" | "posts" | "reviews" | "bundles" | "gift" | "promos" | "subs";
+type Tab = "orders" | "users" | "products" | "categories" | "posts" | "reviews" | "bundles" | "banners" | "gift" | "promos" | "subs";
 
 type OrdersView =
   | { kind: "list" }
@@ -61,6 +61,7 @@ function Admin() {
     { id: "posts", label: "Журнал" },
     { id: "reviews", label: "Отзывы" },
     { id: "bundles", label: "Наборы" },
+    { id: "banners", label: "Баннеры" },
     { id: "gift", label: "Сертификаты" },
     { id: "promos", label: "Промокоды" },
     { id: "subs", label: "Подписчики" },
@@ -102,6 +103,7 @@ function Admin() {
       {tab === "posts" && <PostsPanel />}
       {tab === "reviews" && <ReviewsPanel />}
       {tab === "bundles" && <BundlesPanel />}
+      {tab === "banners" && <BannersPanel />}
       {tab === "gift" && <GiftCardsPanel lang={lang} />}
       {tab === "promos" && <PromosPanel lang={lang} />}
       {tab === "subs" && <SubscribersPanel />}
