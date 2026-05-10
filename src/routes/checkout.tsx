@@ -170,7 +170,15 @@ function Checkout() {
           <SectionTitle index="03" title="Согласие" />
           <label className="flex gap-3 items-start text-sm">
             <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-1" required />
-            <span className="text-muted-foreground leading-relaxed">{t("checkout.consent")}</span>
+            <span className="text-muted-foreground leading-relaxed">
+              Я принимаю условия{" "}
+              <a href="/offer" target="_blank" rel="noreferrer" className="underline text-foreground">публичной оферты</a>
+              {", "}
+              <a href="/privacy" target="_blank" rel="noreferrer" className="underline text-foreground">Политики конфиденциальности</a>
+              {" и даю "}
+              <a href="/consent" target="_blank" rel="noreferrer" className="underline text-foreground">согласие на обработку персональных данных</a>
+              {" в соответствии с 152-ФЗ."}
+            </span>
           </label>
         </section>
 
