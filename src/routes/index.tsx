@@ -179,6 +179,39 @@ function Index() {
         </Suspense>
       </LazyVisible>
 
+      {/* JOURNAL */}
+      {posts.length > 0 && (
+        <section className="container-rhode py-24 border-t border-border">
+          <div className="flex items-end justify-between mb-12 gap-4">
+            <h2 className="font-display text-3xl md:text-5xl">{t("nav.journal")}</h2>
+            <Link to="/journal" className="text-sm hover-underline shrink-0">{t("nav.journal")} →</Link>
+          </div>
+          <div className="grid md:grid-cols-3 gap-x-6 gap-y-12">
+            {posts.slice(0, 3).map((p) => (
+              <Link
+                key={p.slug}
+                to="/journal/$slug"
+                params={{ slug: p.slug }}
+                className="group block"
+              >
+                <div className="aspect-[4/5] overflow-hidden bg-muted">
+                  <img
+                    src={p.cover}
+                    alt={p.title}
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                </div>
+                <div className="text-xs uppercase tracking-widest text-muted-foreground mt-4">{p.category}</div>
+                <h3 className="font-display text-2xl mt-2">{p.title}</h3>
+                <p className="text-sm text-muted-foreground mt-2 line-clamp-3">{p.excerpt}</p>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* FULL CATALOG GRID (lazy, ниже фолда) */}
       <LazyVisible>
         <Suspense fallback={<div className="min-h-[400px]" />}>
