@@ -10,11 +10,15 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ShopRouteImport } from './routes/shop'
+import { Route as ReturnsRouteImport } from './routes/returns'
 import { Route as QuizRouteImport } from './routes/quiz'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as OfferRouteImport } from './routes/offer'
 import { Route as JournalRouteImport } from './routes/journal'
 import { Route as GiftCardsRouteImport } from './routes/gift-cards'
 import { Route as FaqRouteImport } from './routes/faq'
+import { Route as ContactsRouteImport } from './routes/contacts'
+import { Route as ConsentRouteImport } from './routes/consent'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as BundlesRouteImport } from './routes/bundles'
@@ -31,6 +35,11 @@ const ShopRoute = ShopRouteImport.update({
   path: '/shop',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReturnsRoute = ReturnsRouteImport.update({
+  id: '/returns',
+  path: '/returns',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const QuizRoute = QuizRouteImport.update({
   id: '/quiz',
   path: '/quiz',
@@ -39,6 +48,11 @@ const QuizRoute = QuizRouteImport.update({
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OfferRoute = OfferRouteImport.update({
+  id: '/offer',
+  path: '/offer',
   getParentRoute: () => rootRouteImport,
 } as any)
 const JournalRoute = JournalRouteImport.update({
@@ -54,6 +68,16 @@ const GiftCardsRoute = GiftCardsRouteImport.update({
 const FaqRoute = FaqRouteImport.update({
   id: '/faq',
   path: '/faq',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactsRoute = ContactsRouteImport.update({
+  id: '/contacts',
+  path: '/contacts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConsentRoute = ConsentRouteImport.update({
+  id: '/consent',
+  path: '/consent',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CheckoutRoute = CheckoutRouteImport.update({
@@ -115,11 +139,15 @@ export interface FileRoutesByFullPath {
   '/bundles': typeof BundlesRouteWithChildren
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
+  '/consent': typeof ConsentRoute
+  '/contacts': typeof ContactsRoute
   '/faq': typeof FaqRoute
   '/gift-cards': typeof GiftCardsRoute
   '/journal': typeof JournalRoute
+  '/offer': typeof OfferRoute
   '/privacy': typeof PrivacyRoute
   '/quiz': typeof QuizRoute
+  '/returns': typeof ReturnsRoute
   '/shop': typeof ShopRoute
   '/bundles/$slug': typeof BundlesSlugRoute
   '/journal/$slug': typeof JournalSlugRoute
@@ -133,11 +161,15 @@ export interface FileRoutesByTo {
   '/bundles': typeof BundlesRouteWithChildren
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
+  '/consent': typeof ConsentRoute
+  '/contacts': typeof ContactsRoute
   '/faq': typeof FaqRoute
   '/gift-cards': typeof GiftCardsRoute
   '/journal': typeof JournalRoute
+  '/offer': typeof OfferRoute
   '/privacy': typeof PrivacyRoute
   '/quiz': typeof QuizRoute
+  '/returns': typeof ReturnsRoute
   '/shop': typeof ShopRoute
   '/bundles/$slug': typeof BundlesSlugRoute
   '/journal/$slug': typeof JournalSlugRoute
@@ -152,11 +184,15 @@ export interface FileRoutesById {
   '/bundles': typeof BundlesRouteWithChildren
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
+  '/consent': typeof ConsentRoute
+  '/contacts': typeof ContactsRoute
   '/faq': typeof FaqRoute
   '/gift-cards': typeof GiftCardsRoute
   '/journal': typeof JournalRoute
+  '/offer': typeof OfferRoute
   '/privacy': typeof PrivacyRoute
   '/quiz': typeof QuizRoute
+  '/returns': typeof ReturnsRoute
   '/shop': typeof ShopRoute
   '/bundles/$slug': typeof BundlesSlugRoute
   '/journal_/$slug': typeof JournalSlugRoute
@@ -172,11 +208,15 @@ export interface FileRouteTypes {
     | '/bundles'
     | '/cart'
     | '/checkout'
+    | '/consent'
+    | '/contacts'
     | '/faq'
     | '/gift-cards'
     | '/journal'
+    | '/offer'
     | '/privacy'
     | '/quiz'
+    | '/returns'
     | '/shop'
     | '/bundles/$slug'
     | '/journal/$slug'
@@ -190,11 +230,15 @@ export interface FileRouteTypes {
     | '/bundles'
     | '/cart'
     | '/checkout'
+    | '/consent'
+    | '/contacts'
     | '/faq'
     | '/gift-cards'
     | '/journal'
+    | '/offer'
     | '/privacy'
     | '/quiz'
+    | '/returns'
     | '/shop'
     | '/bundles/$slug'
     | '/journal/$slug'
@@ -208,11 +252,15 @@ export interface FileRouteTypes {
     | '/bundles'
     | '/cart'
     | '/checkout'
+    | '/consent'
+    | '/contacts'
     | '/faq'
     | '/gift-cards'
     | '/journal'
+    | '/offer'
     | '/privacy'
     | '/quiz'
+    | '/returns'
     | '/shop'
     | '/bundles/$slug'
     | '/journal_/$slug'
@@ -227,11 +275,15 @@ export interface RootRouteChildren {
   BundlesRoute: typeof BundlesRouteWithChildren
   CartRoute: typeof CartRoute
   CheckoutRoute: typeof CheckoutRoute
+  ConsentRoute: typeof ConsentRoute
+  ContactsRoute: typeof ContactsRoute
   FaqRoute: typeof FaqRoute
   GiftCardsRoute: typeof GiftCardsRoute
   JournalRoute: typeof JournalRoute
+  OfferRoute: typeof OfferRoute
   PrivacyRoute: typeof PrivacyRoute
   QuizRoute: typeof QuizRoute
+  ReturnsRoute: typeof ReturnsRoute
   ShopRoute: typeof ShopRoute
   JournalSlugRoute: typeof JournalSlugRoute
   ProductSlugRoute: typeof ProductSlugRoute
@@ -246,6 +298,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShopRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/returns': {
+      id: '/returns'
+      path: '/returns'
+      fullPath: '/returns'
+      preLoaderRoute: typeof ReturnsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/quiz': {
       id: '/quiz'
       path: '/quiz'
@@ -258,6 +317,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/offer': {
+      id: '/offer'
+      path: '/offer'
+      fullPath: '/offer'
+      preLoaderRoute: typeof OfferRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/journal': {
@@ -279,6 +345,20 @@ declare module '@tanstack/react-router' {
       path: '/faq'
       fullPath: '/faq'
       preLoaderRoute: typeof FaqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contacts': {
+      id: '/contacts'
+      path: '/contacts'
+      fullPath: '/contacts'
+      preLoaderRoute: typeof ContactsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/consent': {
+      id: '/consent'
+      path: '/consent'
+      fullPath: '/consent'
+      preLoaderRoute: typeof ConsentRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/checkout': {
@@ -373,11 +453,15 @@ const rootRouteChildren: RootRouteChildren = {
   BundlesRoute: BundlesRouteWithChildren,
   CartRoute: CartRoute,
   CheckoutRoute: CheckoutRoute,
+  ConsentRoute: ConsentRoute,
+  ContactsRoute: ContactsRoute,
   FaqRoute: FaqRoute,
   GiftCardsRoute: GiftCardsRoute,
   JournalRoute: JournalRoute,
+  OfferRoute: OfferRoute,
   PrivacyRoute: PrivacyRoute,
   QuizRoute: QuizRoute,
+  ReturnsRoute: ReturnsRoute,
   ShopRoute: ShopRoute,
   JournalSlugRoute: JournalSlugRoute,
   ProductSlugRoute: ProductSlugRoute,
@@ -385,12 +469,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
