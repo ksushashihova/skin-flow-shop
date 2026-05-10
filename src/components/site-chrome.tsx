@@ -289,7 +289,7 @@ export function SiteFooter() {
   const { t } = useI18n();
   return (
     <footer className="border-t border-border mt-32">
-      <div className="container-rhode py-16 grid gap-10 md:grid-cols-4 text-sm">
+      <div className="container-rhode py-16 grid gap-10 md:grid-cols-3 lg:grid-cols-5 text-sm">
         <div>
           <div className="font-display text-2xl mb-4">ОБЛАКО</div>
           <p className="text-muted-foreground max-w-xs">
