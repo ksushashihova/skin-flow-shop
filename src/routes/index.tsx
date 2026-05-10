@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import { api, type Product, type Banner } from "@/lib/api";
+import { api, type Product, type Banner, type Post } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { ProductCard } from "@/components/product-card";
 
@@ -48,9 +48,11 @@ function Index() {
   const { t } = useI18n();
   const [products, setProducts] = useState<Product[]>([]);
   const [banners, setBanners] = useState<Banner[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
   useEffect(() => {
     api.listProducts().then(setProducts);
     api.listBanners().then((bs) => setBanners(bs.filter((b) => b.enabled)));
+    api.listPosts().then(setPosts);
   }, []);
 
   return (
