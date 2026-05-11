@@ -295,12 +295,19 @@ function AuthForms({ onAuth }: { onAuth: () => void }) {
           {mode === "login" ? t("auth.login") : t("auth.register")}
         </button>
       </form>
-      <button
-        onClick={() => setMode(mode === "login" ? "register" : "login")}
-        className="mt-6 text-xs uppercase tracking-widest hover-underline"
-      >
-        {mode === "login" ? t("auth.register") : t("auth.login")}
-      </button>
+      <div className="mt-6 flex items-center justify-between">
+        <button
+          onClick={() => setMode(mode === "login" ? "register" : "login")}
+          className="text-xs uppercase tracking-widest hover-underline"
+        >
+          {mode === "login" ? t("auth.register") : t("auth.login")}
+        </button>
+        {mode === "login" && (
+          <a href="/forgot-password" className="text-xs uppercase tracking-widest hover-underline">
+            Забыли пароль?
+          </a>
+        )}
+      </div>
     </div>
   );
 }
