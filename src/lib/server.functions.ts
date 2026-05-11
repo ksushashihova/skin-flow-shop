@@ -9,7 +9,6 @@ import {
   computeOrderTotals,
   resolvePromoOrGift,
   expandCartToItems,
-  decrementStock,
   generateGiftCode,
   buildTrackingNumber,
   estimatedDeliveryFor,
