@@ -2,7 +2,7 @@
 // and better-auth on the client. Public surface kept stable.
 // Cart remains in localStorage (anonymous-friendly).
 
-import { authClient } from "./auth-client";
+import { authClient, requestPasswordReset as authRequestReset, resetPassword as authResetPassword } from "./auth-client";
 import {
   createOrderFn, cancelOrderFn, checkPromoFn, createGiftCardFn, adminListUsersFn,
 } from "./server.functions";
