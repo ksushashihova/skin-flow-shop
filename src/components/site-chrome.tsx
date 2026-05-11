@@ -202,8 +202,8 @@ export function SiteHeader({ variant = "solid" }: { variant?: "solid" | "overlay
 
   return (
     <header className={wrapperCls}>
-      {/* MOBILE */}
-      <div className={`md:hidden ${logoBarCls} border-b border-border`}>
+      {/* MOBILE + TABLET */}
+      <div className={`lg:hidden ${logoBarCls} border-b border-border`}>
         <div className="container-rhode">
           <div className="grid grid-cols-3 items-center h-16">
             <div className="flex items-center">
