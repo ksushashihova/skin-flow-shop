@@ -1,5 +1,7 @@
-// Server-only helpers used by createServerFn handlers.
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
+// Server-only helpers used by createServerFn handlers (Drizzle-based).
+import { db } from "@/db/index.server";
+import { products, bundles, bundleItems, promos, giftCards } from "@/db/schema";
+import { eq, gt, inArray } from "drizzle-orm";
 
 const TIERS = [
   { id: "silver", min: 0, rate: 0.05 },
@@ -13,21 +15,21 @@ const DELIVERY_PRICES = { pickup: 0, courier: 390, post: 290, cdek: 350 } as con
 export interface OrderItem { productId: string; name: string; quantity: number; price: number; image?: string }
 
 export async function resolvePromoOrGift(code: string, subtotal: number) {
-  const { data: gc } = await supabaseAdmin.from("gift_cards").select("*").eq("code", code).gt("remaining", 0).maybeSingle();
-  if (gc) {
+  const [gc] = await db.select().from(giftCards).where(eq(giftCards.code, code)).limit(1);
+  if (gc && gc.remaining > 0) {
     return {
       promo: { code: gc.code, amount: gc.remaining, description: `Подарочный сертификат на ${gc.remaining} ₽` },
       discount: Math.min(gc.remaining, subtotal),
     };
   }
-  const { data: p } = await supabaseAdmin.from("promos").select("*").eq("code", code).maybeSingle();
+  const [p] = await db.select().from(promos).where(eq(promos.code, code)).limit(1);
   if (!p) return null;
-  if (p.uses_left !== null && p.uses_left <= 0) throw new Error("Промокод исчерпан");
+  if (p.usesLeft !== null && p.usesLeft <= 0) throw new Error("Промокод исчерпан");
   let discount = 0;
   if (p.percent) discount = Math.round(subtotal * (p.percent / 100));
   if (p.amount) discount = Math.min(p.amount, subtotal);
   return {
-    promo: { code: p.code, percent: p.percent ?? undefined, amount: p.amount ?? undefined, description: p.description, usesLeft: p.uses_left ?? undefined },
+    promo: { code: p.code, percent: p.percent ?? undefined, amount: p.amount ?? undefined, description: p.description, usesLeft: p.usesLeft ?? undefined },
     discount,
   };
 }
@@ -36,24 +38,23 @@ export async function expandCartToItems(cart: { productId?: string; bundleId?: s
   const items: OrderItem[] = [];
   for (const c of cart) {
     if (c.productId) {
-      const { data: p } = await supabaseAdmin.from("products").select("*").eq("id", c.productId).maybeSingle();
+      const [p] = await db.select().from(products).where(eq(products.id, c.productId)).limit(1);
       if (!p) throw new Error("Товар недоступен");
-      if (c.quantity > p.stock) throw new Error(`Недостаточно "${p.name_ru}": доступно ${p.stock}`);
-      items.push({ productId: p.id, name: p.name_ru, quantity: c.quantity, price: p.price, image: (p.images || [])[0] });
+      if (c.quantity > p.stock) throw new Error(`Недостаточно "${p.nameRu}": доступно ${p.stock}`);
+      items.push({ productId: p.id, name: p.nameRu, quantity: c.quantity, price: p.price, image: (p.images || [])[0] });
     } else if (c.bundleId) {
-      const { data: b } = await supabaseAdmin.from("bundles").select("*").eq("id", c.bundleId).maybeSingle();
+      const [b] = await db.select().from(bundles).where(eq(bundles.id, c.bundleId)).limit(1);
       if (!b) throw new Error("Набор недоступен");
-      const { data: bi } = await supabaseAdmin.from("bundle_items").select("*").eq("bundle_id", b.id).order("position");
-      const productIds = (bi || []).map((x) => x.product_id);
-      const { data: ps } = await supabaseAdmin.from("products").select("*").in("id", productIds);
-      const products = ps || [];
-      const full = products.reduce((s, x) => s + x.price, 0);
-      const discounted = Math.round(full * (1 - b.discount_percent / 100));
-      for (const p of products) {
-        if (c.quantity > p.stock) throw new Error(`Недостаточно "${p.name_ru}": доступно ${p.stock}`);
+      const bi = await db.select().from(bundleItems).where(eq(bundleItems.bundleId, b.id));
+      const productIds = bi.map((x) => x.productId);
+      const ps = productIds.length ? await db.select().from(products).where(inArray(products.id, productIds)) : [];
+      const full = ps.reduce((s, x) => s + x.price, 0);
+      const discounted = Math.round(full * (1 - b.discountPercent / 100));
+      for (const p of ps) {
+        if (c.quantity > p.stock) throw new Error(`Недостаточно "${p.nameRu}": доступно ${p.stock}`);
         const share = full > 0 ? p.price / full : 0;
         items.push({
-          productId: p.id, name: `${p.name_ru} · ${b.name}`,
+          productId: p.id, name: `${p.nameRu} · ${b.name}`,
           quantity: c.quantity, price: Math.round(discounted * share), image: (p.images || [])[0],
         });
       }
@@ -64,8 +65,8 @@ export async function expandCartToItems(cart: { productId?: string; bundleId?: s
 
 export async function decrementStock(items: OrderItem[]) {
   for (const it of items) {
-    const { data: p } = await supabaseAdmin.from("products").select("stock").eq("id", it.productId).maybeSingle();
-    if (p) await supabaseAdmin.from("products").update({ stock: Math.max(0, p.stock - it.quantity) }).eq("id", it.productId);
+    const [p] = await db.select({ stock: products.stock }).from(products).where(eq(products.id, it.productId)).limit(1);
+    if (p) await db.update(products).set({ stock: Math.max(0, p.stock - it.quantity) }).where(eq(products.id, it.productId));
   }
 }
 
@@ -85,14 +86,13 @@ export async function computeOrderTotals(args: {
     if (r) {
       promoDiscount = r.discount;
       promoUsed = code;
-      // decrement uses / gift remaining
-      const { data: gc } = await supabaseAdmin.from("gift_cards").select("remaining").eq("code", code).maybeSingle();
+      const [gc] = await db.select({ remaining: giftCards.remaining }).from(giftCards).where(eq(giftCards.code, code)).limit(1);
       if (gc) {
-        await supabaseAdmin.from("gift_cards").update({ remaining: Math.max(0, gc.remaining - promoDiscount) }).eq("code", code);
+        await db.update(giftCards).set({ remaining: Math.max(0, gc.remaining - promoDiscount) }).where(eq(giftCards.code, code));
       } else {
-        const { data: pr } = await supabaseAdmin.from("promos").select("uses_left").eq("code", code).maybeSingle();
-        if (pr && pr.uses_left !== null) {
-          await supabaseAdmin.from("promos").update({ uses_left: Math.max(0, pr.uses_left - 1) }).eq("code", code);
+        const [pr] = await db.select({ usesLeft: promos.usesLeft }).from(promos).where(eq(promos.code, code)).limit(1);
+        if (pr && pr.usesLeft !== null) {
+          await db.update(promos).set({ usesLeft: Math.max(0, pr.usesLeft - 1) }).where(eq(promos.code, code));
         }
       }
     }
@@ -112,7 +112,10 @@ export function generateGiftCode(): string {
 export function buildTrackingNumber(): string {
   return String(Math.floor(Math.random() * 9000000000) + 1000000000);
 }
-export function estimatedDeliveryFor(method: "pickup"|"courier"|"post"|"cdek"): string {
+export function estimatedDeliveryFor(method: "pickup"|"courier"|"post"|"cdek"): Date {
   const days = method === "courier" ? 2 : method === "cdek" ? 5 : method === "post" ? 8 : 1;
-  return new Date(Date.now() + 86400000 * days).toISOString();
+  return new Date(Date.now() + 86400000 * days);
 }
+
+// Use unused import ref to keep tree-shaking honest
+void gt;
