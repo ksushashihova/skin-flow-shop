@@ -80,19 +80,19 @@ function Index() {
             <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-foreground/45 to-transparent pointer-events-none md:rounded-t-3xl" />
             <div className="absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-foreground/40 to-transparent pointer-events-none md:rounded-b-3xl" />
 
-            <div className="absolute left-6 right-6 md:left-12 md:right-auto bottom-12 md:bottom-16 md:max-w-xl text-background fade-up">
-              <div className="text-[11px] uppercase tracking-[0.3em] mb-4 opacity-90">
+            <div className="absolute left-6 right-6 md:left-12 md:right-12 lg:right-auto bottom-12 md:bottom-16 md:max-w-2xl text-background fade-up">
+              <div className="text-[11px] uppercase tracking-[0.3em] mb-4 opacity-90 [text-shadow:0_1px_8px_rgba(0,0,0,0.35)]">
                 ОБЛАКО
               </div>
-              <h1 className="font-display text-[color:var(--broun)] text-4xl md:text-7xl leading-[1.05]">
+              <h1 className="font-display text-background text-4xl md:text-5xl lg:text-6xl leading-[1.08] [text-shadow:0_2px_18px_rgba(0,0,0,0.45)]">
                 {t("hero.title")}
               </h1>
-              <p className="mt-5 text-sm md:text-base opacity-90 max-w-md">
+              <p className="mt-5 text-sm md:text-base opacity-95 max-w-md md:max-w-lg [text-shadow:0_1px_10px_rgba(0,0,0,0.4)]">
                 {t("hero.subtitle")}
               </p>
               <Link
                 to="/shop"
-                className="inline-block mt-8 border border-background/80 text-background px-8 py-3 text-[11px] uppercase tracking-[0.25em] rounded-full hover:bg-background hover:text-foreground transition-colors"
+                className="inline-block mt-8 border border-background/90 text-background px-8 py-3 text-[11px] uppercase tracking-[0.25em] rounded-full hover:bg-background hover:text-foreground transition-colors"
               >
                 {t("hero.cta")}
               </Link>
@@ -179,6 +179,32 @@ function Index() {
           <PhilosophySection />
         </Suspense>
       </LazyVisible>
+
+      {/* QUIZ CTA */}
+      <section className="container-rhode py-24">
+        <div className="relative overflow-hidden rounded-3xl bg-[color:var(--rose-mid)] text-background px-8 py-16 md:px-16 md:py-24 grid md:grid-cols-2 gap-10 items-center">
+          <div>
+            <div className="uppercase text-[11px] tracking-[0.3em] opacity-90 mb-4">
+              {t("nav.quiz")}
+            </div>
+            <h2 className="font-display text-3xl md:text-5xl leading-tight">
+              Подберём уход под вашу кожу
+            </h2>
+            <p className="mt-5 max-w-md opacity-95">
+              Короткий опрос — и мы предложим подходящие средства из коллекции ОБЛАКО.
+            </p>
+            <Link
+              to="/quiz"
+              className="inline-block mt-8 border border-background/90 text-background px-8 py-3 text-[11px] uppercase tracking-[0.25em] rounded-full hover:bg-background hover:text-[color:var(--rose-deep)] transition-colors"
+            >
+              Пройти подбор
+            </Link>
+          </div>
+          <div className="hidden md:block">
+            <div className="aspect-[4/5] w-full rounded-2xl bg-[color:var(--rose-deep)]/30 backdrop-blur-sm" />
+          </div>
+        </div>
+      </section>
 
       {/* JOURNAL */}
       {posts.length > 0 && (
