@@ -58,19 +58,19 @@
   --muted: #ebdfcb;
   --muted-foreground: #8a6770;
 
-  --accent: #C27B89;
-  --accent-foreground: #f5ecdf;
+  --accent: #E04A75;
+  --accent-foreground: #fff7ee;
 
-  --destructive: #973F62;
-  --destructive-foreground: #f5ecdf;
+  --destructive: #B8264F;
+  --destructive-foreground: #fff7ee;
 
-  --border: #d9c6b1;
-  --input: #d9c6b1;
-  --ring: #B57875;
+  --border: #e3c9b3;
+  --input: #e3c9b3;
+  --ring: #E04A75;
 
-  --rose-soft: #B57875;
-  --rose-mid: #C27B89;
-  --rose-deep: #973F62;
+  --rose-soft: #D87A8C;
+  --rose-mid: #E04A75;
+  --rose-deep: #B8264F;
 
   --surface-cream: #f5ecdf;
   --surface-sand: #ecdfcd;
