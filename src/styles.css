@@ -38,42 +38,46 @@
 :root {
   --radius: 0.25rem;
 
-  /* Warm beige / cream palette inspired by minimalist clean-beauty sites */
-  --background: oklch(0.965 0.012 80);
-  --broun: oklch(31.253% 0.12499 10.068);
-  --foreground: oklch(0.22 0.01 60);
+  /* Brand palette: cream + brown #4A2B32 + roses #B57875 #C27B89 #973F62 */
+  --background: #f5ecdf;            /* cream */
+  --broun: #4A2B32;                 /* deep brown */
+  --foreground: #4A2B32;
 
-  --card: oklch(0.98 0.008 80);
-  --card-foreground: oklch(0.22 0.01 60);
+  --card: #faf3e7;
+  --card-foreground: #4A2B32;
 
-  --popover: oklch(0.98 0.008 80);
-  --popover-foreground: oklch(0.22 0.01 60);
+  --popover: #faf3e7;
+  --popover-foreground: #4A2B32;
 
-  --primary: oklch(0.28 0.015 60);
-  --primary-foreground: oklch(0.97 0.01 80);
+  --primary: #4A2B32;
+  --primary-foreground: #f5ecdf;
 
-  --secondary: oklch(0.92 0.018 75);
-  --secondary-foreground: oklch(0.28 0.015 60);
+  --secondary: #ecdfcd;
+  --secondary-foreground: #4A2B32;
 
-  --muted: oklch(0.93 0.012 80);
-  --muted-foreground: oklch(0.48 0.012 65);
+  --muted: #ebdfcb;
+  --muted-foreground: #8a6770;
 
-  --accent: oklch(0.86 0.04 55);
-  --accent-foreground: oklch(0.25 0.015 60);
+  --accent: #C27B89;
+  --accent-foreground: #f5ecdf;
 
-  --destructive: oklch(0.55 0.18 25);
-  --destructive-foreground: oklch(0.98 0.01 80);
+  --destructive: #973F62;
+  --destructive-foreground: #f5ecdf;
 
-  --border: oklch(0.88 0.012 75);
-  --input: oklch(0.88 0.012 75);
-  --ring: oklch(0.55 0.02 60);
+  --border: #d9c6b1;
+  --input: #d9c6b1;
+  --ring: #B57875;
 
-  --surface-cream: oklch(0.965 0.012 80);
-  --surface-sand: oklch(0.91 0.025 75);
-  --surface-clay: oklch(0.78 0.05 50);
-  --surface-ink: oklch(0.22 0.01 60);
+  --rose-soft: #B57875;
+  --rose-mid: #C27B89;
+  --rose-deep: #973F62;
 
-  --shadow-soft: 0 1px 2px oklch(0.2 0.01 60 / 0.04), 0 8px 24px oklch(0.2 0.01 60 / 0.06);
+  --surface-cream: #f5ecdf;
+  --surface-sand: #ecdfcd;
+  --surface-clay: #B57875;
+  --surface-ink: #4A2B32;
+
+  --shadow-soft: 0 1px 2px rgba(74,43,50,0.06), 0 8px 24px rgba(74,43,50,0.10);
 }
 
 .dark {
