@@ -1,9 +1,9 @@
-// Server functions for sensitive operations.
-// Kept as a thin wrapper file: only createServerFn declarations and imports.
-
+// Server functions for sensitive operations (Drizzle + better-auth).
 import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { requireAuth, requireAdmin } from "./auth-middleware.server";
+import { db } from "@/db/index.server";
+import { orders, profiles, products, giftCards, userRoles } from "@/db/schema";
+import { and, desc, eq } from "drizzle-orm";
 import {
   computeOrderTotals,
   resolvePromoOrGift,
@@ -12,7 +12,11 @@ import {
   generateGiftCode,
   buildTrackingNumber,
   estimatedDeliveryFor,
+  type OrderItem,
 } from "./server.helpers.server";
+
+const toISO = (d: Date | string | null | undefined): string | undefined =>
+  d ? (d instanceof Date ? d.toISOString() : d) : undefined;
 
 /* ----------- checkPromo ----------- */
 export const checkPromoFn = createServerFn({ method: "POST" })
@@ -27,7 +31,7 @@ export const checkPromoFn = createServerFn({ method: "POST" })
 
 /* ----------- createOrder ----------- */
 export const createOrderFn = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((d: {
     address: { city: string; addressLine: string; postalCode: string };
     paymentMethod: "card_online"|"card_on_delivery"|"sbp"|"cash";
@@ -40,92 +44,85 @@ export const createOrderFn = createServerFn({ method: "POST" })
     if (!data.cart.length) throw new Error("Корзина пуста");
     const userId = context.userId;
 
-    // Profile snapshot
-    const { data: profile } = await supabaseAdmin.from("profiles").select("*").eq("id", userId).maybeSingle();
+    const [profile] = await db.select().from(profiles).where(eq(profiles.id, userId)).limit(1);
     if (!profile) throw new Error("Профиль не найден");
 
     const items = await expandCartToItems(data.cart);
 
-    const { totalPrice, deliveryPrice, subtotal, promoDiscount, promoUsed, bonusUsed, bonusEarned, tier } =
+    const { totalPrice, deliveryPrice, promoDiscount, promoUsed, bonusUsed, bonusEarned } =
       await computeOrderTotals({
-        items, deliveryMethod: data.deliveryMethod, totalSpent: profile.total_spent,
-        bonusBalance: profile.bonus_balance, bonusUse: data.bonusUse, promoCode: data.promoCode,
+        items, deliveryMethod: data.deliveryMethod, totalSpent: profile.totalSpent,
+        bonusBalance: profile.bonusBalance, bonusUse: data.bonusUse, promoCode: data.promoCode,
       });
-    void subtotal; void tier;
 
     const tracking = data.deliveryMethod === "pickup" ? null : buildTrackingNumber();
     const eta = estimatedDeliveryFor(data.deliveryMethod);
 
-    const { data: order, error } = await supabaseAdmin.from("orders").insert({
-      user_id: userId, user_email: profile.email,
-      status: "new", total_price: totalPrice,
-      items: items as unknown as never,
-      city: data.address.city, address_line: data.address.addressLine, postal_code: data.address.postalCode,
-      payment_method: data.paymentMethod, delivery_method: data.deliveryMethod,
-      delivery_price: deliveryPrice, bonus_used: bonusUsed, bonus_earned: bonusEarned,
-      promo_used: promoUsed, promo_discount: promoDiscount,
-      tracking_number: tracking, estimated_delivery: eta,
-    }).select().single();
-    if (error) throw new Error(error.message);
+    const [order] = await db.insert(orders).values({
+      userId, userEmail: profile.email,
+      status: "new", totalPrice,
+      items: items as unknown as object,
+      city: data.address.city, addressLine: data.address.addressLine, postalCode: data.address.postalCode,
+      paymentMethod: data.paymentMethod, deliveryMethod: data.deliveryMethod,
+      deliveryPrice, bonusUsed, bonusEarned,
+      promoUsed, promoDiscount,
+      trackingNumber: tracking, estimatedDelivery: eta,
+    }).returning();
 
     await decrementStock(items);
 
-    // Update bonus balance / total spent (bonusEarned накисляется при completed; здесь только списание)
-    await supabaseAdmin.from("profiles").update({
-      bonus_balance: Math.max(0, profile.bonus_balance - bonusUsed),
-      total_spent: profile.total_spent + totalPrice,
-    }).eq("id", userId);
+    await db.update(profiles).set({
+      bonusBalance: Math.max(0, profile.bonusBalance - bonusUsed),
+      totalSpent: profile.totalSpent + totalPrice,
+    }).where(eq(profiles.id, userId));
 
     return {
-      id: order!.id, userId, userEmail: profile.email,
+      id: order.id, userId, userEmail: profile.email,
       status: "new" as const, totalPrice, items,
       address: { city: data.address.city, addressLine: data.address.addressLine, postalCode: data.address.postalCode },
       paymentMethod: data.paymentMethod, deliveryMethod: data.deliveryMethod, deliveryPrice,
       bonusUsed, bonusEarned, promoUsed: promoUsed ?? undefined, promoDiscount,
-      trackingNumber: tracking ?? undefined, estimatedDelivery: eta ?? undefined,
-      createdAt: order!.created_at, updatedAt: order!.updated_at,
+      trackingNumber: tracking ?? undefined, estimatedDelivery: toISO(eta),
+      createdAt: toISO(order.createdAt)!, updatedAt: toISO(order.updatedAt)!,
     };
   });
 
 /* ----------- cancelOrder ----------- */
 export const cancelOrderFn = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((d: { id: string }) => d)
   .handler(async ({ data, context }) => {
     const userId = context.userId;
-    const { data: o } = await supabaseAdmin.from("orders").select("*").eq("id", data.id).maybeSingle();
+    const [o] = await db.select().from(orders).where(eq(orders.id, data.id)).limit(1);
     if (!o) throw new Error("Заказ не найден");
-    if (o.user_id !== userId) throw new Error("Нет доступа");
+    if (o.userId !== userId) throw new Error("Нет доступа");
     if (o.status === "shipped" || o.status === "completed") throw new Error("Этот заказ уже нельзя отменить");
     if (o.status !== "cancelled") {
-      // restock
-      const items = (o.items as unknown as { productId: string; quantity: number }[]) || [];
+      const items = (o.items as unknown as OrderItem[]) || [];
       for (const it of items) {
-        const { data: p } = await supabaseAdmin.from("products").select("stock").eq("id", it.productId).maybeSingle();
-        if (p) await supabaseAdmin.from("products").update({ stock: p.stock + it.quantity }).eq("id", it.productId);
+        const [p] = await db.select({ stock: products.stock }).from(products).where(eq(products.id, it.productId)).limit(1);
+        if (p) await db.update(products).set({ stock: p.stock + it.quantity }).where(eq(products.id, it.productId));
       }
-      // refund bonuses & decrement totalSpent
-      const { data: prof } = await supabaseAdmin.from("profiles").select("bonus_balance, total_spent").eq("id", userId).maybeSingle();
+      const [prof] = await db.select({ bonusBalance: profiles.bonusBalance, totalSpent: profiles.totalSpent }).from(profiles).where(eq(profiles.id, userId)).limit(1);
       if (prof) {
-        await supabaseAdmin.from("profiles").update({
-          bonus_balance: prof.bonus_balance + o.bonus_used,
-          total_spent: Math.max(0, prof.total_spent - o.total_price),
-        }).eq("id", userId);
+        await db.update(profiles).set({
+          bonusBalance: prof.bonusBalance + o.bonusUsed,
+          totalSpent: Math.max(0, prof.totalSpent - o.totalPrice),
+        }).where(eq(profiles.id, userId));
       }
     }
-    const { data: updated } = await supabaseAdmin.from("orders").update({ status: "cancelled" }).eq("id", data.id).select().single();
-    const u = updated!;
+    const [u] = await db.update(orders).set({ status: "cancelled" }).where(eq(orders.id, data.id)).returning();
     return {
-      id: u.id, userId: u.user_id, userEmail: u.user_email,
-      status: "cancelled" as const, totalPrice: u.total_price,
-      items: (u.items as unknown as { productId: string; name: string; quantity: number; price: number; image?: string }[]),
-      address: { city: u.city, addressLine: u.address_line, postalCode: u.postal_code },
-      paymentMethod: u.payment_method, deliveryMethod: u.delivery_method, deliveryPrice: u.delivery_price,
-      bonusUsed: u.bonus_used, bonusEarned: u.bonus_earned,
-      promoUsed: u.promo_used ?? undefined, promoDiscount: u.promo_discount,
-      trackingNumber: u.tracking_number ?? undefined,
-      estimatedDelivery: u.estimated_delivery ?? undefined,
-      createdAt: u.created_at, updatedAt: u.updated_at,
+      id: u.id, userId: u.userId, userEmail: u.userEmail,
+      status: "cancelled" as const, totalPrice: u.totalPrice,
+      items: u.items as unknown as OrderItem[],
+      address: { city: u.city, addressLine: u.addressLine, postalCode: u.postalCode },
+      paymentMethod: u.paymentMethod, deliveryMethod: u.deliveryMethod, deliveryPrice: u.deliveryPrice,
+      bonusUsed: u.bonusUsed, bonusEarned: u.bonusEarned,
+      promoUsed: u.promoUsed ?? undefined, promoDiscount: u.promoDiscount,
+      trackingNumber: u.trackingNumber ?? undefined,
+      estimatedDelivery: toISO(u.estimatedDelivery),
+      createdAt: toISO(u.createdAt)!, updatedAt: toISO(u.updatedAt)!,
     };
   });
 
@@ -136,38 +133,34 @@ export const createGiftCardFn = createServerFn({ method: "POST" })
     if (!data.amount || data.amount < 500) throw new Error("Минимальный номинал — 500 ₽");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.recipientEmail)) throw new Error("Некорректный email получателя");
     const code = generateGiftCode();
-    const { data: row, error } = await supabaseAdmin.from("gift_cards").insert({
+    const [row] = await db.insert(giftCards).values({
       code, amount: data.amount, remaining: data.amount,
-      design: data.design, recipient_email: data.recipientEmail,
+      design: data.design, recipientEmail: data.recipientEmail,
       message: data.message?.slice(0, 300) ?? null,
-    }).select().single();
-    if (error) throw new Error(error.message);
+    }).returning();
     return {
-      code: row!.code, amount: row!.amount, remaining: row!.remaining,
-      design: row!.design as "minimal"|"floral", recipientEmail: row!.recipient_email,
-      message: row!.message ?? undefined,
-      buyerUserId: row!.buyer_user_id ?? undefined,
-      createdAt: row!.created_at,
+      code: row.code, amount: row.amount, remaining: row.remaining,
+      design: row.design as "minimal"|"floral", recipientEmail: row.recipientEmail,
+      message: row.message ?? undefined,
+      buyerUserId: row.buyerUserId ?? undefined,
+      createdAt: toISO(row.createdAt)!,
     };
   });
 
 /* ----------- adminListUsers ----------- */
 export const adminListUsersFn = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const userId = context.userId;
-    const { data: roleCheck } = await supabaseAdmin.from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle();
-    if (!roleCheck) throw new Error("Нет доступа");
-    const [{ data: profiles }, { data: roles }] = await Promise.all([
-      supabaseAdmin.from("profiles").select("*").order("created_at", { ascending: false }),
-      supabaseAdmin.from("user_roles").select("user_id, role"),
-    ]);
-    const adminIds = new Set((roles || []).filter((r) => r.role === "admin").map((r) => r.user_id));
-    return ((profiles || []) as { id: string; email: string; name: string; phone: string | null; bonus_balance: number; total_spent: number; created_at: string }[]).map((p) => ({
+  .middleware([requireAdmin])
+  .handler(async () => {
+    const profs = await db.select().from(profiles).orderBy(desc(profiles.createdAt));
+    const roles = await db.select({ userId: userRoles.userId, role: userRoles.role }).from(userRoles);
+    const adminIds = new Set(roles.filter((r) => r.role === "admin").map((r) => r.userId));
+    return profs.map((p) => ({
       id: p.id, email: p.email,
       role: (adminIds.has(p.id) ? "admin" : "user") as "admin" | "user",
       name: p.name || "", phone: p.phone ?? undefined,
-      bonusBalance: p.bonus_balance, totalSpent: p.total_spent,
-      createdAt: p.created_at,
+      bonusBalance: p.bonusBalance, totalSpent: p.totalSpent,
+      createdAt: toISO(p.createdAt)!,
     }));
   });
+
+void and;
