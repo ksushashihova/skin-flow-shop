@@ -77,8 +77,8 @@ function Index() {
     fetchPriority="high"
     decoding="async"
   />
-            <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-foreground/45 to-transparent pointer-events-none md:rounded-t-3xl" />
-            <div className="absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-foreground/40 to-transparent pointer-events-none md:rounded-b-3xl" />
+            <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-black/55 to-transparent pointer-events-none md:rounded-t-3xl" />
+            <div className="absolute inset-x-0 bottom-0 h-[70%] bg-gradient-to-t from-black/70 via-black/35 to-transparent pointer-events-none md:rounded-b-3xl" />
 
             <div className="absolute left-6 right-6 md:left-12 md:right-12 lg:right-auto bottom-12 md:bottom-20 md:max-w-3xl text-background fade-up">
               <div className="text-xs md:text-sm uppercase tracking-[0.35em] mb-5 text-background [text-shadow:0_2px_10px_rgba(0,0,0,0.6)]">
