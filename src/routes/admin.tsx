@@ -725,13 +725,8 @@ function ProductForm({
           </div>
         </div>
         <div className="md:col-span-2">
-          <label className="block text-xs uppercase tracking-widest text-muted-foreground mb-2">Изображения (по одному URL на строку)</label>
-          <textarea
-            value={data.images.join("\n")}
-            onChange={(e) => set("images", e.target.value.split("\n").map((s) => s.trim()).filter(Boolean))}
-            rows={3}
-            className="w-full bg-background border border-border px-3 py-3 font-mono text-xs"
-          />
+          <label className="block text-xs uppercase tracking-widest text-muted-foreground mb-2">Изображения товара</label>
+          <ImagesArrayUpload folder="products" value={data.images} onChange={(next) => set("images", next)} />
         </div>
         <div className="md:col-span-2">
           <label className="block text-xs uppercase tracking-widest text-muted-foreground mb-2">Описание (рус)</label>
