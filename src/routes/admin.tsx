@@ -1083,7 +1083,16 @@ function BundleForm({ initial, title, products, onCancel, onSave }: {
         <Field label="Название" value={data.name} onChange={(v) => set("name", v)} />
         <Field label="Slug" value={data.slug} onChange={(v) => set("slug", v)} />
         <Field label="Скидка, %" type="number" value={String(data.discountPercent)} onChange={(v) => set("discountPercent", Number(v) || 0)} />
-        <Field label="Обложка (URL)" value={data.cover} onChange={(v) => set("cover", v)} />
+        <div className="md:col-span-2">
+          <label className="block text-xs uppercase tracking-widest text-muted-foreground mb-2">Обложка</label>
+          <S3ImageUpload folder="bundles" value={data.cover} onChange={(url) => set("cover", url)} />
+          <input
+            value={data.cover}
+            onChange={(e) => set("cover", e.target.value)}
+            placeholder="или вставьте URL вручную"
+            className="w-full bg-background border border-border px-3 py-3 mt-3 text-xs"
+          />
+        </div>
         <div className="md:col-span-2">
           <label className="block text-xs uppercase tracking-widest text-muted-foreground mb-2">Описание</label>
           <textarea value={data.description} onChange={(e) => set("description", e.target.value)} rows={3} className="w-full bg-background border border-border px-3 py-3" />
