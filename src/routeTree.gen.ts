@@ -29,6 +29,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProductSlugRouteImport } from './routes/product.$slug'
 import { Route as JournalSlugRouteImport } from './routes/journal_.$slug'
 import { Route as BundlesSlugRouteImport } from './routes/bundles.$slug'
+import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
 
 const ShopRoute = ShopRouteImport.update({
   id: '/shop',
@@ -130,6 +131,11 @@ const BundlesSlugRoute = BundlesSlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => BundlesRoute,
 } as any)
+const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
+  id: '/api/auth/$',
+  path: '/api/auth/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -152,6 +158,7 @@ export interface FileRoutesByFullPath {
   '/bundles/$slug': typeof BundlesSlugRoute
   '/journal/$slug': typeof JournalSlugRoute
   '/product/$slug': typeof ProductSlugRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -174,6 +181,7 @@ export interface FileRoutesByTo {
   '/bundles/$slug': typeof BundlesSlugRoute
   '/journal/$slug': typeof JournalSlugRoute
   '/product/$slug': typeof ProductSlugRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -197,6 +205,7 @@ export interface FileRoutesById {
   '/bundles/$slug': typeof BundlesSlugRoute
   '/journal_/$slug': typeof JournalSlugRoute
   '/product/$slug': typeof ProductSlugRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -221,6 +230,7 @@ export interface FileRouteTypes {
     | '/bundles/$slug'
     | '/journal/$slug'
     | '/product/$slug'
+    | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -243,6 +253,7 @@ export interface FileRouteTypes {
     | '/bundles/$slug'
     | '/journal/$slug'
     | '/product/$slug'
+    | '/api/auth/$'
   id:
     | '__root__'
     | '/'
@@ -265,6 +276,7 @@ export interface FileRouteTypes {
     | '/bundles/$slug'
     | '/journal_/$slug'
     | '/product/$slug'
+    | '/api/auth/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -287,6 +299,7 @@ export interface RootRouteChildren {
   ShopRoute: typeof ShopRoute
   JournalSlugRoute: typeof JournalSlugRoute
   ProductSlugRoute: typeof ProductSlugRoute
+  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -431,6 +444,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BundlesSlugRouteImport
       parentRoute: typeof BundlesRoute
     }
+    '/api/auth/$': {
+      id: '/api/auth/$'
+      path: '/api/auth/$'
+      fullPath: '/api/auth/$'
+      preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -465,6 +485,7 @@ const rootRouteChildren: RootRouteChildren = {
   ShopRoute: ShopRoute,
   JournalSlugRoute: JournalSlugRoute,
   ProductSlugRoute: ProductSlugRoute,
+  ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
