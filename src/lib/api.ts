@@ -1,21 +1,24 @@
-// API layer backed by Lovable Cloud (Postgres + Supabase Auth).
-// Public interface kept stable so all components keep working unchanged.
+// API layer backed by Drizzle/PostgreSQL via TanStack Start server functions
+// and better-auth on the client. Public surface kept stable.
 // Cart remains in localStorage (anonymous-friendly).
-//
-// Sensitive operations (createOrder, checkPromo, createGiftCard) are in
-// src/lib/*.functions.ts as createServerFn handlers.
 
-import { supabase } from "@/integrations/supabase/client";
-// Loose-typed alias to bypass strict generated types in mappings.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const db: any = supabase;
+import { authClient } from "./auth-client";
 import {
-  createOrderFn,
-  cancelOrderFn,
-  checkPromoFn,
-  createGiftCardFn,
-  adminListUsersFn,
+  createOrderFn, cancelOrderFn, checkPromoFn, createGiftCardFn, adminListUsersFn,
 } from "./server.functions";
+import {
+  getMeFn, updateMeFn,
+  listProductsFn, getProductFn, getProductStockFn,
+  adminCreateProductFn, adminUpdateProductFn, adminDeleteProductFn,
+  listCategoriesFn, adminCreateCategoryFn, adminUpdateCategoryFn, adminDeleteCategoryFn,
+  listOrdersFn, getOrderFn, adminListOrdersFn, adminUpdateOrderFn, adminUpdateOrderTrackingFn, adminGetUserOrdersFn,
+  listPostsFn, getPostFn, adminCreatePostFn, adminUpdatePostFn, adminDeletePostFn,
+  listReviewsFn, addReviewFn, adminListReviewsFn, adminDeleteReviewFn,
+  listBundlesFn, getBundleFn, adminCreateBundleFn, adminUpdateBundleFn, adminDeleteBundleFn,
+  listBannersFn, adminCreateBannerFn, adminUpdateBannerFn, adminDeleteBannerFn,
+  adminListPromosFn, adminCreatePromoFn, adminDeletePromoFn,
+  subscribeFn, adminListSubscribersFn, adminListGiftCardsFn,
+} from "./data.functions";
 
 /* ===================== Types (unchanged) ===================== */
 
@@ -26,24 +29,17 @@ export type DeliveryMethod = "pickup" | "courier" | "post" | "cdek";
 export type BonusTier = "silver" | "gold" | "platinum";
 
 export interface User {
-  id: string;
-  email: string;
-  role: Role;
-  name: string;
-  phone?: string;
-  bonusBalance: number;
-  totalSpent: number;
-  createdAt: string;
+  id: string; email: string; role: Role;
+  name: string; phone?: string;
+  bonusBalance: number; totalSpent: number; createdAt: string;
 }
 
 export const BONUS_RATE = 0.05;
-
 export const TIERS: { id: BonusTier; label: string; min: number; rate: number; perks: string[] }[] = [
   { id: "silver", label: "СЕРЕБРО", min: 0, rate: 0.05, perks: ["5% бонусов с каждого заказа"] },
   { id: "gold", label: "ЗОЛОТО", min: 10000, rate: 0.07, perks: ["7% бонусов", "Приоритетная поддержка"] },
   { id: "platinum", label: "ПЛАТИНА", min: 50000, rate: 0.10, perks: ["10% бонусов", "Бесплатная доставка", "Ранний доступ к новинкам"] },
 ];
-
 export function tierFor(totalSpent: number): typeof TIERS[number] {
   return [...TIERS].reverse().find((t) => totalSpent >= t.min) ?? TIERS[0];
 }
@@ -113,125 +109,12 @@ function emit(name: string) { if (typeof window !== "undefined") window.dispatch
 const emitAuthChange = () => emit("oblako-auth-change");
 const emitCartChange = () => emit("oblako-cart-change");
 
-/* ----- mappers ----- */
-
-type ProductRow = {
-  id: string; slug: string; name_ru: string; name_en: string;
-  tagline_ru: string; tagline_en: string; description_ru: string; description_en: string;
-  price: number; images: string[]; stock: number; category_id: string;
-  video_url: string | null; how_to_use: string | null;
-};
-const mapProduct = (r: ProductRow): Product => ({
-  id: r.id, slug: r.slug,
-  name_ru: r.name_ru, name_en: r.name_en,
-  tagline_ru: r.tagline_ru, tagline_en: r.tagline_en,
-  description_ru: r.description_ru, description_en: r.description_en,
-  price: r.price, images: r.images || [], stock: r.stock, category: r.category_id,
-  videoUrl: r.video_url ?? undefined, howToUse: r.how_to_use ?? undefined,
-});
-const productToRow = (p: Partial<Product>): Record<string, unknown> => {
-  const out: Record<string, unknown> = {};
-  if (p.slug !== undefined) out.slug = p.slug;
-  if (p.name_ru !== undefined) out.name_ru = p.name_ru;
-  if (p.name_en !== undefined) out.name_en = p.name_en;
-  if (p.tagline_ru !== undefined) out.tagline_ru = p.tagline_ru;
-  if (p.tagline_en !== undefined) out.tagline_en = p.tagline_en;
-  if (p.description_ru !== undefined) out.description_ru = p.description_ru;
-  if (p.description_en !== undefined) out.description_en = p.description_en;
-  if (p.price !== undefined) out.price = p.price;
-  if (p.images !== undefined) out.images = p.images;
-  if (p.stock !== undefined) out.stock = p.stock;
-  if (p.category !== undefined) out.category_id = p.category;
-  if (p.videoUrl !== undefined) out.video_url = p.videoUrl;
-  if (p.howToUse !== undefined) out.how_to_use = p.howToUse;
-  return out;
-};
-
-type BannerRow = { id: string; title: string; subtitle: string; image: string; cta_label: string; cta_href: string; text_color: "light"|"dark"; enabled: boolean; sort_order: number };
-const mapBanner = (r: BannerRow): Banner => ({
-  id: r.id, title: r.title, subtitle: r.subtitle, image: r.image,
-  ctaLabel: r.cta_label, ctaHref: r.cta_href,
-  textColor: r.text_color, enabled: r.enabled, order: r.sort_order,
-});
-const bannerToRow = (b: Partial<Banner>): Record<string, unknown> => {
-  const o: Record<string, unknown> = {};
-  if (b.title !== undefined) o.title = b.title;
-  if (b.subtitle !== undefined) o.subtitle = b.subtitle;
-  if (b.image !== undefined) o.image = b.image;
-  if (b.ctaLabel !== undefined) o.cta_label = b.ctaLabel;
-  if (b.ctaHref !== undefined) o.cta_href = b.ctaHref;
-  if (b.textColor !== undefined) o.text_color = b.textColor;
-  if (b.enabled !== undefined) o.enabled = b.enabled;
-  if (b.order !== undefined) o.sort_order = b.order;
-  return o;
-};
-
-type PostRow = { slug: string; title: string; excerpt: string; cover: string; category: string; published_at: string; body: string[]; images: string[]; video_url: string | null };
-const mapPost = (r: PostRow): Post => ({
-  slug: r.slug, title: r.title, excerpt: r.excerpt, cover: r.cover,
-  category: r.category, date: r.published_at, body: r.body || [],
-  images: r.images || [], videoUrl: r.video_url ?? undefined,
-});
-const postToRow = (p: Partial<Post>): Record<string, unknown> => {
-  const o: Record<string, unknown> = {};
-  if (p.title !== undefined) o.title = p.title;
-  if (p.excerpt !== undefined) o.excerpt = p.excerpt;
-  if (p.cover !== undefined) o.cover = p.cover;
-  if (p.category !== undefined) o.category = p.category;
-  if (p.body !== undefined) o.body = p.body;
-  if (p.images !== undefined) o.images = p.images;
-  if (p.videoUrl !== undefined) o.video_url = p.videoUrl;
-  if (p.date !== undefined) o.published_at = p.date;
-  return o;
-};
-
-type ReviewRow = { id: string; product_id: string; user_id: string | null; author_name: string; rating: number; text: string; photos: string[]; created_at: string };
-const mapReview = (r: ReviewRow): Review => ({
-  id: r.id, productId: r.product_id, userId: r.user_id ?? undefined,
-  authorName: r.author_name, rating: r.rating, text: r.text,
-  photos: r.photos || [], createdAt: r.created_at,
-});
-
-type OrderRow = {
-  id: string; user_id: string; user_email: string; status: OrderStatus;
-  total_price: number; items: OrderItem[]; city: string; address_line: string; postal_code: string;
-  payment_method: PaymentMethod; delivery_method: DeliveryMethod; delivery_price: number;
-  bonus_used: number; bonus_earned: number; promo_used: string | null; promo_discount: number;
-  tracking_number: string | null; estimated_delivery: string | null;
-  created_at: string; updated_at: string;
-};
-const mapOrder = (r: OrderRow): Order => ({
-  id: r.id, userId: r.user_id, userEmail: r.user_email, status: r.status,
-  totalPrice: r.total_price, items: r.items as OrderItem[],
-  address: { city: r.city, addressLine: r.address_line, postalCode: r.postal_code },
-  paymentMethod: r.payment_method, deliveryMethod: r.delivery_method, deliveryPrice: r.delivery_price,
-  bonusUsed: r.bonus_used, bonusEarned: r.bonus_earned,
-  promoUsed: r.promo_used ?? undefined, promoDiscount: r.promo_discount,
-  trackingNumber: r.tracking_number ?? undefined,
-  estimatedDelivery: r.estimated_delivery ?? undefined,
-  createdAt: r.created_at, updatedAt: r.updated_at,
-});
-
-/* ----- bundles helper ----- */
 function bundlePriceCalc(b: Bundle, products: Product[]): { full: number; discounted: number } {
   const full = b.productIds.reduce((s, id) => {
     const p = products.find((x) => x.id === id);
     return s + (p?.price ?? 0);
   }, 0);
   return { full, discounted: Math.round(full * (1 - b.discountPercent / 100)) };
-}
-
-async function loadBundlesWithItems(): Promise<Bundle[]> {
-  const [{ data: bundlesData }, { data: itemsData }] = await Promise.all([
-    db.from("bundles").select("*").order("created_at", { ascending: false }),
-    db.from("bundle_items").select("*").order("position", { ascending: true }),
-  ]);
-  const items = (itemsData || []) as { bundle_id: string; product_id: string; position: number }[];
-  return ((bundlesData || []) as { id: string; slug: string; name: string; description: string; cover: string; discount_percent: number }[]).map((b) => ({
-    id: b.id, slug: b.slug, name: b.name, description: b.description,
-    cover: b.cover, discountPercent: b.discount_percent,
-    productIds: items.filter((i) => i.bundle_id === b.id).map((i) => i.product_id),
-  }));
 }
 
 /* ===================== Cart (localStorage) ===================== */
@@ -246,129 +129,68 @@ function saveCart(items: CartItem[]) {
   emitCartChange();
 }
 
-/* ===================== Auth helpers ===================== */
-
-async function getCurrentUser(): Promise<User | null> {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) return null;
-  const uid = session.user.id;
-  const [{ data: profile }, { data: roles }] = await Promise.all([
-    db.from("profiles").select("*").eq("id", uid).maybeSingle(),
-    db.from("user_roles").select("role").eq("user_id", uid),
-  ]);
-  if (!profile) return null;
-  const role: Role = (roles || []).some((r: { role: string }) => r.role === "admin") ? "admin" : "user";
-  return {
-    id: profile.id, email: profile.email, role,
-    name: profile.name || "", phone: profile.phone ?? undefined,
-    bonusBalance: profile.bonus_balance, totalSpent: profile.total_spent,
-    createdAt: profile.created_at,
-  };
-}
-
 /* ===================== api ===================== */
 
 export const api = {
-  /* ----- auth ----- */
+  /* ----- auth (better-auth) ----- */
   async register(email: string, password: string, name: string, phone?: string) {
-    const { data, error } = await supabase.auth.signUp({
-      email, password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/account`,
-        data: { name, phone: phone ?? "" },
-      },
-    });
-    if (error) throw new Error(error.message);
-    if (!data.session) {
-      // email confirmation required
-      throw new Error("Проверьте почту, чтобы подтвердить регистрацию");
+    const res = await authClient.signUp.email({ email, password, name });
+    if (res.error) throw new Error(res.error.message || "Не удалось зарегистрироваться");
+    if (phone) {
+      try { await updateMeFn({ data: { phone } }); } catch { /* ignore */ }
     }
     emitAuthChange();
-    const u = await getCurrentUser();
-    return { token: data.session.access_token, user: u! };
+    const u = await getMeFn();
+    return { token: "", user: u! };
   },
   async login(email: string, password: string) {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw new Error(error.message);
+    const res = await authClient.signIn.email({ email, password });
+    if (res.error) throw new Error(res.error.message || "Неверный email или пароль");
     emitAuthChange();
-    const u = await getCurrentUser();
-    return { token: data.session!.access_token, user: u! };
+    const u = await getMeFn();
+    return { token: "", user: u! };
   },
   async logout() {
-    await supabase.auth.signOut();
+    await authClient.signOut();
     emitAuthChange();
   },
   async loginWithGoogle() {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/account` },
-    });
-    if (error) throw new Error(error.message);
+    throw new Error("Вход через Google недоступен");
   },
   async me(): Promise<User | null> {
-    return getCurrentUser();
+    return (await getMeFn()) as User | null;
   },
   async updateMe(patch: Partial<Pick<User, "name" | "phone">>): Promise<User> {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error("Не авторизован");
-    const upd: Record<string, unknown> = {};
-    if (patch.name !== undefined) upd.name = patch.name;
-    if (patch.phone !== undefined) upd.phone = patch.phone;
-    const { error } = await db.from("profiles").update(upd).eq("id", session.user.id);
-    if (error) throw new Error(error.message);
-    return (await getCurrentUser())!;
+    await updateMeFn({ data: patch });
+    return (await getMeFn()) as User;
   },
 
   /* ----- products ----- */
   async listProducts(query = "", categoryId?: string): Promise<Product[]> {
-    let q = db.from("products").select("*").order("created_at", { ascending: false });
-    if (categoryId) q = q.eq("category_id", categoryId);
-    const { data, error } = await q;
-    if (error) throw new Error(error.message);
-    let list = ((data || []) as ProductRow[]).map(mapProduct);
-    const s = query.trim().toLowerCase();
-    if (s) {
-      list = list.filter((p) =>
-        [p.name_ru, p.name_en, p.tagline_ru, p.tagline_en].some((t) => t.toLowerCase().includes(s)),
-      );
-    }
-    return list;
+    return (await listProductsFn({ data: { query, categoryId } })) as Product[];
   },
   async getProduct(idOrSlug: string): Promise<Product | null> {
-    const { data } = await db.from("products").select("*").or(`id.eq.${idOrSlug},slug.eq.${idOrSlug}`).maybeSingle();
-    return data ? mapProduct(data as ProductRow) : null;
+    return (await getProductFn({ data: { idOrSlug } })) as Product | null;
   },
 
   /* ----- categories ----- */
   async listCategories(): Promise<ProductCategory[]> {
-    const { data } = await db.from("categories").select("*").order("sort_order");
-    return ((data || []) as { id: string; name_ru: string; name_en: string }[]).map((r) => ({
-      id: r.id, name_ru: r.name_ru, name_en: r.name_en,
-    }));
+    return (await listCategoriesFn()) as ProductCategory[];
   },
   async adminCreateCategory(input: { name_ru: string; name_en: string; id?: string }): Promise<ProductCategory> {
-    const id = (input.id || input.name_ru || "cat").toLowerCase().trim()
-      .replace(/[^a-z0-9а-я]+/gi, "-").replace(/^-+|-+$/g, "").slice(0, 32) || "cat_" + Math.random().toString(36).slice(2, 6);
-    const { data, error } = await db.from("categories").insert({ id, name_ru: input.name_ru, name_en: input.name_en || input.name_ru }).select().single();
-    if (error) throw new Error(error.message);
-    return data as ProductCategory;
+    return (await adminCreateCategoryFn({ data: input })) as ProductCategory;
   },
   async adminUpdateCategory(id: string, patch: Partial<Omit<ProductCategory, "id">>): Promise<ProductCategory> {
-    const { data, error } = await db.from("categories").update(patch).eq("id", id).select().single();
-    if (error) throw new Error(error.message);
-    return data as ProductCategory;
+    return (await adminUpdateCategoryFn({ data: { id, patch } })) as ProductCategory;
   },
   async adminDeleteCategory(id: string): Promise<void> {
-    const { count } = await db.from("products").select("id", { count: "exact", head: true }).eq("category_id", id);
-    if ((count ?? 0) > 0) throw new Error("Нельзя удалить категорию: к ней привязаны товары");
-    const { error } = await db.from("categories").delete().eq("id", id);
-    if (error) throw new Error(error.message);
+    await adminDeleteCategoryFn({ data: { id } });
   },
 
   /* ----- cart (localStorage) ----- */
   async getCart(): Promise<CartItem[]> { return loadCart(); },
   async addToCart(productId: string, quantity = 1): Promise<CartItem[]> {
-    const { data: p } = await db.from("products").select("stock").eq("id", productId).maybeSingle();
+    const p = await getProductStockFn({ data: { id: productId } });
     if (!p) throw new Error("Товар не найден");
     const cart = loadCart();
     const existing = cart.find((c) => c.productId === productId && !c.bundleId);
@@ -402,7 +224,7 @@ export const api = {
 
   /* ----- promo / orders ----- */
   async checkPromo(code: string, subtotal: number): Promise<{ promo: PromoCode; discount: number }> {
-    return checkPromoFn({ data: { code, subtotal } });
+    return (await checkPromoFn({ data: { code, subtotal } })) as { promo: PromoCode; discount: number };
   },
   async createOrder(
     address: { city: string; addressLine: string; postalCode: string },
@@ -413,260 +235,144 @@ export const api = {
     const result = await createOrderFn({ data: { address, paymentMethod, deliveryMethod, consent, bonusUse, promoCode, cart } });
     saveCart([]);
     emitAuthChange();
-    return result as Order;
+    return result as unknown as Order;
   },
   async listOrders(): Promise<Order[]> {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return [];
-    const { data, error } = await db.from("orders").select("*").eq("user_id", session.user.id).order("created_at", { ascending: false });
-    if (error) throw new Error(error.message);
-    return ((data || []) as OrderRow[]).map(mapOrder);
+    try {
+      return (await listOrdersFn()) as Order[];
+    } catch {
+      return [];
+    }
   },
   async getOrder(id: string): Promise<Order | null> {
-    const { data } = await db.from("orders").select("*").eq("id", id).maybeSingle();
-    return data ? mapOrder(data as OrderRow) : null;
+    try {
+      return (await getOrderFn({ data: { id } })) as Order | null;
+    } catch {
+      return null;
+    }
   },
   async cancelOrder(id: string): Promise<Order> {
     const o = await cancelOrderFn({ data: { id } });
     emitAuthChange();
-    return o as Order;
+    return o as unknown as Order;
   },
 
   /* ----- admin orders/users ----- */
   async adminListOrders(): Promise<Order[]> {
-    const { data } = await db.from("orders").select("*").order("created_at", { ascending: false });
-    return ((data || []) as OrderRow[]).map(mapOrder);
+    return (await adminListOrdersFn()) as Order[];
   },
   async adminUpdateOrder(id: string, status: OrderStatus): Promise<Order> {
-    const { data, error } = await db.from("orders").update({ status }).eq("id", id).select().single();
-    if (error) throw new Error(error.message);
-    return mapOrder(data as OrderRow);
+    return (await adminUpdateOrderFn({ data: { id, status } })) as Order;
   },
   async adminUpdateOrderTracking(id: string, trackingNumber: string, estimatedDelivery?: string): Promise<Order> {
-    const upd: Record<string, unknown> = { tracking_number: trackingNumber };
-    if (estimatedDelivery) upd.estimated_delivery = estimatedDelivery;
-    const { data, error } = await db.from("orders").update(upd).eq("id", id).select().single();
-    if (error) throw new Error(error.message);
-    return mapOrder(data as OrderRow);
+    return (await adminUpdateOrderTrackingFn({ data: { id, trackingNumber, estimatedDelivery } })) as Order;
   },
   async adminListUsers(): Promise<User[]> {
-    return adminListUsersFn() as Promise<User[]>;
+    return (await adminListUsersFn()) as User[];
   },
   async adminGetUserOrders(userId: string): Promise<Order[]> {
-    const { data } = await db.from("orders").select("*").eq("user_id", userId).order("created_at", { ascending: false });
-    return ((data || []) as OrderRow[]).map(mapOrder);
+    return (await adminGetUserOrdersFn({ data: { userId } })) as Order[];
   },
 
   /* ----- products CRUD ----- */
   async adminCreateProduct(input: Omit<Product, "id" | "slug"> & { slug?: string }): Promise<Product> {
-    const id = "p_" + Math.random().toString(36).slice(2, 8);
-    const slug = input.slug?.trim() || id;
-    const row = { id, slug, ...productToRow(input) };
-    const { data, error } = await db.from("products").insert(row).select().single();
-    if (error) throw new Error(error.message);
-    return mapProduct(data as ProductRow);
+    return (await adminCreateProductFn({ data: input as unknown as Record<string, unknown> })) as Product;
   },
   async adminUpdateProduct(id: string, patch: Partial<Product>): Promise<Product> {
-    const { data, error } = await db.from("products").update(productToRow(patch)).eq("id", id).select().single();
-    if (error) throw new Error(error.message);
-    return mapProduct(data as ProductRow);
+    return (await adminUpdateProductFn({ data: { id, patch: patch as unknown as Record<string, unknown> } })) as Product;
   },
   async adminDeleteProduct(id: string): Promise<{ ok: true }> {
-    const { error } = await db.from("products").delete().eq("id", id);
-    if (error) throw new Error(error.message);
-    return { ok: true };
+    return await adminDeleteProductFn({ data: { id } });
   },
 
   /* ----- posts ----- */
   async listPosts(): Promise<Post[]> {
-    const { data } = await db.from("posts").select("*").order("published_at", { ascending: false });
-    return ((data || []) as PostRow[]).map(mapPost);
+    return (await listPostsFn()) as Post[];
   },
   async getPost(slug: string): Promise<Post | null> {
-    const { data } = await db.from("posts").select("*").eq("slug", slug).maybeSingle();
-    return data ? mapPost(data as PostRow) : null;
+    return (await getPostFn({ data: { slug } })) as Post | null;
   },
   async adminCreatePost(input: Omit<Post, "slug"> & { slug?: string }): Promise<Post> {
-    const slug = input.slug?.trim() || "post-" + Math.random().toString(36).slice(2, 8);
-    const { data, error } = await db.from("posts").insert({ slug, ...postToRow(input) }).select().single();
-    if (error) throw new Error(error.message);
-    return mapPost(data as PostRow);
+    return (await adminCreatePostFn({ data: input as unknown as Record<string, unknown> })) as Post;
   },
   async adminUpdatePost(slug: string, patch: Partial<Post>): Promise<Post> {
-    const { data, error } = await db.from("posts").update(postToRow(patch)).eq("slug", slug).select().single();
-    if (error) throw new Error(error.message);
-    return mapPost(data as PostRow);
+    return (await adminUpdatePostFn({ data: { slug, patch: patch as unknown as Record<string, unknown> } })) as Post;
   },
   async adminDeletePost(slug: string): Promise<{ ok: true }> {
-    const { error } = await db.from("posts").delete().eq("slug", slug);
-    if (error) throw new Error(error.message);
-    return { ok: true };
+    return await adminDeletePostFn({ data: { slug } });
   },
 
   /* ----- reviews ----- */
   async listReviews(productId: string): Promise<Review[]> {
-    const { data } = await db.from("reviews").select("*").eq("product_id", productId).order("created_at", { ascending: false });
-    return ((data || []) as ReviewRow[]).map(mapReview);
+    return (await listReviewsFn({ data: { productId } })) as Review[];
   },
   async addReview(input: Omit<Review, "id" | "createdAt" | "userId">): Promise<Review> {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error("Войдите, чтобы оставить отзыв");
-    const id = "r_" + Math.random().toString(36).slice(2, 8);
-    const { data, error } = await db.from("reviews").insert({
-      id, product_id: input.productId, user_id: session.user.id,
-      author_name: input.authorName, rating: input.rating, text: input.text, photos: input.photos || [],
-    }).select().single();
-    if (error) throw new Error(error.message);
-    return mapReview(data as ReviewRow);
+    return (await addReviewFn({ data: { productId: input.productId, authorName: input.authorName, rating: input.rating, text: input.text, photos: input.photos || [] } })) as Review;
   },
   async adminDeleteReview(id: string): Promise<{ ok: true }> {
-    const { error } = await db.from("reviews").delete().eq("id", id);
-    if (error) throw new Error(error.message);
-    return { ok: true };
+    return await adminDeleteReviewFn({ data: { id } });
   },
   async adminListReviews(): Promise<Review[]> {
-    const { data } = await db.from("reviews").select("*").order("created_at", { ascending: false });
-    return ((data || []) as ReviewRow[]).map(mapReview);
+    return (await adminListReviewsFn()) as Review[];
   },
 
   /* ----- bundles ----- */
-  async listBundles(): Promise<Bundle[]> { return loadBundlesWithItems(); },
+  async listBundles(): Promise<Bundle[]> { return (await listBundlesFn()) as Bundle[]; },
   async getBundle(idOrSlug: string): Promise<Bundle | null> {
-    const all = await loadBundlesWithItems();
-    return all.find((b) => b.id === idOrSlug || b.slug === idOrSlug) ?? null;
+    return (await getBundleFn({ data: { idOrSlug } })) as Bundle | null;
   },
   bundlePrice(b: Bundle, products: Product[]) { return bundlePriceCalc(b, products); },
   async adminCreateBundle(input: Omit<Bundle, "id" | "slug"> & { slug?: string }): Promise<Bundle> {
-    const id = "b_" + Math.random().toString(36).slice(2, 8);
-    const slug = input.slug?.trim() || id;
-    const { error } = await db.from("bundles").insert({
-      id, slug, name: input.name, description: input.description,
-      cover: input.cover, discount_percent: input.discountPercent,
-    });
-    if (error) throw new Error(error.message);
-    if (input.productIds.length) {
-      await db.from("bundle_items").insert(
-        input.productIds.map((pid, i) => ({ bundle_id: id, product_id: pid, position: i })),
-      );
-    }
-    return { id, slug, name: input.name, description: input.description, cover: input.cover, discountPercent: input.discountPercent, productIds: input.productIds };
+    return (await adminCreateBundleFn({ data: input })) as Bundle;
   },
   async adminUpdateBundle(id: string, patch: Partial<Bundle>): Promise<Bundle> {
-    const upd: Record<string, unknown> = {};
-    if (patch.name !== undefined) upd.name = patch.name;
-    if (patch.description !== undefined) upd.description = patch.description;
-    if (patch.cover !== undefined) upd.cover = patch.cover;
-    if (patch.discountPercent !== undefined) upd.discount_percent = patch.discountPercent;
-    if (patch.slug !== undefined) upd.slug = patch.slug;
-    if (Object.keys(upd).length) {
-      const { error } = await db.from("bundles").update(upd).eq("id", id);
-      if (error) throw new Error(error.message);
-    }
-    if (patch.productIds) {
-      await db.from("bundle_items").delete().eq("bundle_id", id);
-      if (patch.productIds.length) {
-        await db.from("bundle_items").insert(
-          patch.productIds.map((pid, i) => ({ bundle_id: id, product_id: pid, position: i })),
-        );
-      }
-    }
-    return (await this.getBundle(id))!;
+    return (await adminUpdateBundleFn({ data: { id, patch: patch as unknown as Record<string, unknown> } })) as Bundle;
   },
   async adminDeleteBundle(id: string): Promise<{ ok: true }> {
-    await db.from("bundle_items").delete().eq("bundle_id", id);
-    const { error } = await db.from("bundles").delete().eq("id", id);
-    if (error) throw new Error(error.message);
-    return { ok: true };
+    return await adminDeleteBundleFn({ data: { id } });
   },
 
   /* ----- gift cards ----- */
   async createGiftCard(input: { amount: number; design: GiftCard["design"]; recipientEmail: string; message?: string }): Promise<GiftCard> {
-    return createGiftCardFn({ data: input }) as Promise<GiftCard>;
+    return (await createGiftCardFn({ data: input })) as GiftCard;
   },
   async adminListGiftCards(): Promise<GiftCard[]> {
-    const { data } = await db.from("gift_cards").select("*").order("created_at", { ascending: false });
-    return ((data || []) as { code: string; amount: number; remaining: number; design: GiftCard["design"]; recipient_email: string; message: string | null; buyer_user_id: string | null; created_at: string }[]).map((r) => ({
-      code: r.code, amount: r.amount, remaining: r.remaining, design: r.design,
-      recipientEmail: r.recipient_email, message: r.message ?? undefined,
-      buyerUserId: r.buyer_user_id ?? undefined, createdAt: r.created_at,
-    }));
+    return (await adminListGiftCardsFn()) as GiftCard[];
   },
 
   /* ----- newsletter ----- */
   async subscribe(email: string, consent: boolean): Promise<{ subscriber: Subscriber; promo: PromoCode }> {
-    if (!consent) throw new Error("Необходимо согласие на обработку данных");
-    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) throw new Error("Некорректный email");
-    const { error } = await db.from("subscribers").insert({ email, consent, promo_code: "WELCOME10" });
-    if (error) {
-      if (error.code === "23505") throw new Error("Вы уже подписаны");
-      throw new Error(error.message);
-    }
-    // Log consent (best-effort)
-    await db.from("consents").insert({ email, kind: "marketing" }).then(() => undefined, () => undefined);
-    return {
-      subscriber: { email, consent, promoCode: "WELCOME10", createdAt: new Date().toISOString() },
-      promo: { code: "WELCOME10", percent: 10, description: "Скидка 10% за подписку на рассылку" },
-    };
+    return (await subscribeFn({ data: { email, consent } })) as { subscriber: Subscriber; promo: PromoCode };
   },
   async adminListSubscribers(): Promise<Subscriber[]> {
-    const { data } = await db.from("subscribers").select("*").order("created_at", { ascending: false });
-    return ((data || []) as { email: string; consent: boolean; promo_code: string | null; created_at: string }[]).map((r) => ({
-      email: r.email, consent: r.consent, promoCode: r.promo_code || "", createdAt: r.created_at,
-    }));
+    return (await adminListSubscribersFn()) as Subscriber[];
   },
 
   /* ----- promos ----- */
   async adminListPromos(): Promise<PromoCode[]> {
-    const { data } = await db.from("promos").select("*").order("created_at", { ascending: false });
-    return ((data || []) as { code: string; percent: number | null; amount: number | null; description: string; uses_left: number | null }[]).map((r) => ({
-      code: r.code, percent: r.percent ?? undefined, amount: r.amount ?? undefined,
-      description: r.description, usesLeft: r.uses_left ?? undefined,
-    }));
+    return (await adminListPromosFn()) as PromoCode[];
   },
   async adminCreatePromo(input: PromoCode): Promise<PromoCode> {
-    const code = input.code.trim().toUpperCase();
-    if (!code) throw new Error("Код промокода обязателен");
-    if (!input.percent && !input.amount) throw new Error("Укажите процент или фиксированную сумму");
-    const { error } = await db.from("promos").insert({
-      code, percent: input.percent ?? null, amount: input.amount ?? null,
-      description: input.description || `Скидка ${input.percent ? input.percent + "%" : input.amount + " ₽"}`,
-      uses_left: input.usesLeft ?? null,
-    });
-    if (error) {
-      if (error.code === "23505") throw new Error("Промокод с таким кодом уже существует");
-      throw new Error(error.message);
-    }
-    return { ...input, code };
+    return (await adminCreatePromoFn({ data: input })) as PromoCode;
   },
   async adminDeletePromo(code: string): Promise<{ ok: true }> {
-    const { error } = await db.from("promos").delete().eq("code", code);
-    if (error) throw new Error(error.message);
-    return { ok: true };
+    return await adminDeletePromoFn({ data: { code } });
   },
 
   /* ----- banners ----- */
   async listBanners(): Promise<Banner[]> {
-    const { data } = await db.from("banners").select("*").order("sort_order");
-    return ((data || []) as BannerRow[]).map(mapBanner);
+    return (await listBannersFn()) as Banner[];
   },
   async adminListBanners(): Promise<Banner[]> {
-    const { data } = await db.from("banners").select("*").order("sort_order");
-    return ((data || []) as BannerRow[]).map(mapBanner);
+    return (await listBannersFn()) as Banner[];
   },
   async adminCreateBanner(input: Omit<Banner, "id">): Promise<Banner> {
-    const id = "bn_" + Math.random().toString(36).slice(2, 8);
-    const { data, error } = await db.from("banners").insert({ id, ...bannerToRow(input) }).select().single();
-    if (error) throw new Error(error.message);
-    return mapBanner(data as BannerRow);
+    return (await adminCreateBannerFn({ data: input as unknown as Record<string, unknown> })) as Banner;
   },
   async adminUpdateBanner(id: string, patch: Partial<Banner>): Promise<Banner> {
-    const { data, error } = await db.from("banners").update(bannerToRow(patch)).eq("id", id).select().single();
-    if (error) throw new Error(error.message);
-    return mapBanner(data as BannerRow);
+    return (await adminUpdateBannerFn({ data: { id, patch: patch as unknown as Record<string, unknown> } })) as Banner;
   },
   async adminDeleteBanner(id: string): Promise<{ ok: true }> {
-    const { error } = await db.from("banners").delete().eq("id", id);
-    if (error) throw new Error(error.message);
-    return { ok: true };
+    return await adminDeleteBannerFn({ data: { id } });
   },
 };
