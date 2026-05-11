@@ -41,7 +41,7 @@
   /* Brand palette: cream + brown #4A2B32 + roses #B57875 #C27B89 #973F62 */
   --background: #f5ecdf;            /* cream */
   --broun: #4A2B32;                 /* deep brown */
-  --foreground: #4A2B32;
+  --foreground: #000000;
 
   --card: #faf3e7;
   --card-foreground: #4A2B32;
