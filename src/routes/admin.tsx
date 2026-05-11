@@ -2,6 +2,52 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { api, type Order, type OrderStatus, type User, type Product, type ProductCategory, type Post, type Review, type Bundle, type GiftCard, type Subscriber, type PromoCode, type Banner } from "@/lib/api";
 import { useI18n, formatPrice } from "@/lib/i18n";
+import { S3ImageUpload } from "@/components/admin/s3-image-upload";
+
+// Виджет для управления массивом изображений: загрузка в S3 + ручной ввод URL
+function ImagesArrayUpload({
+  folder,
+  value,
+  onChange,
+}: {
+  folder: string;
+  value: string[];
+  onChange: (next: string[]) => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <S3ImageUpload
+        folder={folder}
+        label="Загрузить и добавить в список"
+        onChange={(url) => onChange([...(value ?? []), url])}
+      />
+      <textarea
+        value={(value ?? []).join("\n")}
+        onChange={(e) => onChange(e.target.value.split(/\n+/).map((s) => s.trim()).filter(Boolean))}
+        rows={3}
+        placeholder="https://..."
+        className="w-full bg-background border border-border px-3 py-3 font-mono text-xs"
+      />
+      {value && value.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {value.map((src, i) => (
+            <div key={i} className="relative group">
+              <img src={src} alt="" className="w-20 h-20 object-cover bg-muted border border-border" />
+              <button
+                type="button"
+                onClick={() => onChange(value.filter((_, j) => j !== i))}
+                className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground w-6 h-6 text-xs rounded-full opacity-0 group-hover:opacity-100 transition"
+                title="Удалить"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Панель администратора — ОБЛАКО" }] }),
@@ -679,13 +725,8 @@ function ProductForm({
           </div>
         </div>
         <div className="md:col-span-2">
-          <label className="block text-xs uppercase tracking-widest text-muted-foreground mb-2">Изображения (по одному URL на строку)</label>
-          <textarea
-            value={data.images.join("\n")}
-            onChange={(e) => set("images", e.target.value.split("\n").map((s) => s.trim()).filter(Boolean))}
-            rows={3}
-            className="w-full bg-background border border-border px-3 py-3 font-mono text-xs"
-          />
+          <label className="block text-xs uppercase tracking-widest text-muted-foreground mb-2">Изображения товара</label>
+          <ImagesArrayUpload folder="products" value={data.images} onChange={(next) => set("images", next)} />
         </div>
         <div className="md:col-span-2">
           <label className="block text-xs uppercase tracking-widest text-muted-foreground mb-2">Описание (рус)</label>
@@ -865,15 +906,14 @@ function PostForm({
         <Field label="Категория" value={data.category} onChange={(v) => set("category", v)} />
         <Field label="Дата" value={data.date} onChange={(v) => set("date", v)} />
         <div className="md:col-span-2">
-          <label className="block text-xs uppercase tracking-widest text-muted-foreground mb-2">Обложка (URL)</label>
+          <label className="block text-xs uppercase tracking-widest text-muted-foreground mb-2">Обложка</label>
+          <S3ImageUpload folder="posts" value={data.cover} onChange={(url) => set("cover", url)} />
           <input
             value={data.cover}
             onChange={(e) => set("cover", e.target.value)}
-            className="w-full bg-background border border-border px-3 py-3"
+            placeholder="или вставьте URL вручную"
+            className="w-full bg-background border border-border px-3 py-3 mt-3 text-xs"
           />
-          {data.cover && (
-            <img src={data.cover} alt="" className="mt-3 w-48 h-32 object-cover bg-muted" />
-          )}
         </div>
         <div className="md:col-span-2">
           <label className="block text-xs uppercase tracking-widest text-muted-foreground mb-2">Краткое описание</label>
@@ -896,28 +936,13 @@ function PostForm({
 
         <div className="md:col-span-2">
           <label className="block text-xs uppercase tracking-widest text-muted-foreground mb-2">
-            Фотографии в статье (по одной ссылке в строке)
+            Фотографии в статье
           </label>
-          <textarea
-            value={(data.images ?? []).join("\n")}
-            onChange={(e) =>
-              set(
-                "images",
-                e.target.value.split(/\n+/).map((s) => s.trim()).filter(Boolean),
-              )
-            }
-            rows={4}
-            placeholder="https://...
-https://..."
-            className="w-full bg-background border border-border px-3 py-3 text-sm"
+          <ImagesArrayUpload
+            folder="posts"
+            value={data.images ?? []}
+            onChange={(next) => set("images", next)}
           />
-          {data.images && data.images.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {data.images.map((src, i) => (
-                <img key={i} src={src} alt="" className="w-24 h-24 object-cover bg-muted" />
-              ))}
-            </div>
-          )}
         </div>
 
         <div className="md:col-span-2">
@@ -1058,7 +1083,16 @@ function BundleForm({ initial, title, products, onCancel, onSave }: {
         <Field label="Название" value={data.name} onChange={(v) => set("name", v)} />
         <Field label="Slug" value={data.slug} onChange={(v) => set("slug", v)} />
         <Field label="Скидка, %" type="number" value={String(data.discountPercent)} onChange={(v) => set("discountPercent", Number(v) || 0)} />
-        <Field label="Обложка (URL)" value={data.cover} onChange={(v) => set("cover", v)} />
+        <div className="md:col-span-2">
+          <label className="block text-xs uppercase tracking-widest text-muted-foreground mb-2">Обложка</label>
+          <S3ImageUpload folder="bundles" value={data.cover} onChange={(url) => set("cover", url)} />
+          <input
+            value={data.cover}
+            onChange={(e) => set("cover", e.target.value)}
+            placeholder="или вставьте URL вручную"
+            className="w-full bg-background border border-border px-3 py-3 mt-3 text-xs"
+          />
+        </div>
         <div className="md:col-span-2">
           <label className="block text-xs uppercase tracking-widest text-muted-foreground mb-2">Описание</label>
           <textarea value={data.description} onChange={(e) => set("description", e.target.value)} rows={3} className="w-full bg-background border border-border px-3 py-3" />
@@ -1417,12 +1451,16 @@ function BannerForm({
           className="w-full bg-background border border-border px-3 py-3"
         />
       </div>
-      <Field label="URL изображения" value={data.image} onChange={(v) => set("image", v)} />
-      {data.image && (
-        <div className="aspect-[16/9] bg-muted overflow-hidden">
-          <img src={data.image} alt="" className="w-full h-full object-cover" />
-        </div>
-      )}
+      <div>
+        <label className="block text-xs uppercase tracking-widest text-muted-foreground mb-2">Изображение</label>
+        <S3ImageUpload folder="banners" value={data.image} onChange={(url) => set("image", url)} />
+        <input
+          value={data.image}
+          onChange={(e) => set("image", e.target.value)}
+          placeholder="или вставьте URL вручную"
+          className="w-full bg-background border border-border px-3 py-3 mt-3 text-xs"
+        />
+      </div>
       <div className="grid md:grid-cols-2 gap-4">
         <Field label="Текст кнопки" value={data.ctaLabel} onChange={(v) => set("ctaLabel", v)} />
         <Field label="Ссылка (href)" value={data.ctaHref} onChange={(v) => set("ctaHref", v)} />
