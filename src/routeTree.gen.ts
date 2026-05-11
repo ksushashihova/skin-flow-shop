@@ -11,11 +11,13 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ShopRouteImport } from './routes/shop'
 import { Route as ReturnsRouteImport } from './routes/returns'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as QuizRouteImport } from './routes/quiz'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as OfferRouteImport } from './routes/offer'
 import { Route as JournalRouteImport } from './routes/journal'
 import { Route as GiftCardsRouteImport } from './routes/gift-cards'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as FaqRouteImport } from './routes/faq'
 import { Route as ContactsRouteImport } from './routes/contacts'
 import { Route as ConsentRouteImport } from './routes/consent'
@@ -41,6 +43,11 @@ const ReturnsRoute = ReturnsRouteImport.update({
   path: '/returns',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const QuizRoute = QuizRouteImport.update({
   id: '/quiz',
   path: '/quiz',
@@ -64,6 +71,11 @@ const JournalRoute = JournalRouteImport.update({
 const GiftCardsRoute = GiftCardsRouteImport.update({
   id: '/gift-cards',
   path: '/gift-cards',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FaqRoute = FaqRouteImport.update({
@@ -148,11 +160,13 @@ export interface FileRoutesByFullPath {
   '/consent': typeof ConsentRoute
   '/contacts': typeof ContactsRoute
   '/faq': typeof FaqRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/gift-cards': typeof GiftCardsRoute
   '/journal': typeof JournalRoute
   '/offer': typeof OfferRoute
   '/privacy': typeof PrivacyRoute
   '/quiz': typeof QuizRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/returns': typeof ReturnsRoute
   '/shop': typeof ShopRoute
   '/bundles/$slug': typeof BundlesSlugRoute
@@ -171,11 +185,13 @@ export interface FileRoutesByTo {
   '/consent': typeof ConsentRoute
   '/contacts': typeof ContactsRoute
   '/faq': typeof FaqRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/gift-cards': typeof GiftCardsRoute
   '/journal': typeof JournalRoute
   '/offer': typeof OfferRoute
   '/privacy': typeof PrivacyRoute
   '/quiz': typeof QuizRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/returns': typeof ReturnsRoute
   '/shop': typeof ShopRoute
   '/bundles/$slug': typeof BundlesSlugRoute
@@ -195,11 +211,13 @@ export interface FileRoutesById {
   '/consent': typeof ConsentRoute
   '/contacts': typeof ContactsRoute
   '/faq': typeof FaqRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/gift-cards': typeof GiftCardsRoute
   '/journal': typeof JournalRoute
   '/offer': typeof OfferRoute
   '/privacy': typeof PrivacyRoute
   '/quiz': typeof QuizRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/returns': typeof ReturnsRoute
   '/shop': typeof ShopRoute
   '/bundles/$slug': typeof BundlesSlugRoute
@@ -220,11 +238,13 @@ export interface FileRouteTypes {
     | '/consent'
     | '/contacts'
     | '/faq'
+    | '/forgot-password'
     | '/gift-cards'
     | '/journal'
     | '/offer'
     | '/privacy'
     | '/quiz'
+    | '/reset-password'
     | '/returns'
     | '/shop'
     | '/bundles/$slug'
@@ -243,11 +263,13 @@ export interface FileRouteTypes {
     | '/consent'
     | '/contacts'
     | '/faq'
+    | '/forgot-password'
     | '/gift-cards'
     | '/journal'
     | '/offer'
     | '/privacy'
     | '/quiz'
+    | '/reset-password'
     | '/returns'
     | '/shop'
     | '/bundles/$slug'
@@ -266,11 +288,13 @@ export interface FileRouteTypes {
     | '/consent'
     | '/contacts'
     | '/faq'
+    | '/forgot-password'
     | '/gift-cards'
     | '/journal'
     | '/offer'
     | '/privacy'
     | '/quiz'
+    | '/reset-password'
     | '/returns'
     | '/shop'
     | '/bundles/$slug'
@@ -290,11 +314,13 @@ export interface RootRouteChildren {
   ConsentRoute: typeof ConsentRoute
   ContactsRoute: typeof ContactsRoute
   FaqRoute: typeof FaqRoute
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   GiftCardsRoute: typeof GiftCardsRoute
   JournalRoute: typeof JournalRoute
   OfferRoute: typeof OfferRoute
   PrivacyRoute: typeof PrivacyRoute
   QuizRoute: typeof QuizRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   ReturnsRoute: typeof ReturnsRoute
   ShopRoute: typeof ShopRoute
   JournalSlugRoute: typeof JournalSlugRoute
@@ -316,6 +342,13 @@ declare module '@tanstack/react-router' {
       path: '/returns'
       fullPath: '/returns'
       preLoaderRoute: typeof ReturnsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/quiz': {
@@ -351,6 +384,13 @@ declare module '@tanstack/react-router' {
       path: '/gift-cards'
       fullPath: '/gift-cards'
       preLoaderRoute: typeof GiftCardsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/faq': {
@@ -476,11 +516,13 @@ const rootRouteChildren: RootRouteChildren = {
   ConsentRoute: ConsentRoute,
   ContactsRoute: ContactsRoute,
   FaqRoute: FaqRoute,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   GiftCardsRoute: GiftCardsRoute,
   JournalRoute: JournalRoute,
   OfferRoute: OfferRoute,
   PrivacyRoute: PrivacyRoute,
   QuizRoute: QuizRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   ReturnsRoute: ReturnsRoute,
   ShopRoute: ShopRoute,
   JournalSlugRoute: JournalSlugRoute,
@@ -490,3 +532,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
