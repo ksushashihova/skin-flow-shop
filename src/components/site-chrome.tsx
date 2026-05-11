@@ -257,7 +257,7 @@ export function SiteHeader({ variant = "solid" }: { variant?: "solid" | "overlay
         <div className={navBarCls}>
           <div className={isOverlay ? "px-10" : "container-rhode"}>
             <div className="grid grid-cols-3 items-center h-12">
-              <nav className="flex items-center gap-7 text-xs uppercase tracking-[0.2em]">
+              <nav className="flex items-center gap-8 text-sm uppercase tracking-[0.2em]">
                 {NAV_LINKS.slice(0, 5).map((l) => (
                   <Link key={l.to} to={l.to} className={linkCls} activeProps={{ className: "font-semibold" }}>
                     {t(l.key)}
