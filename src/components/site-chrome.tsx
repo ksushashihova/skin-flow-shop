@@ -240,7 +240,7 @@ export function SiteHeader({ variant = "solid" }: { variant?: "solid" | "overlay
       </div>
 
       {/* DESKTOP */}
-      <div className="hidden md:block">
+      <div className="hidden lg:block">
         {/* Лого-строка — всегда на белом */}
         <div className={logoBarCls}>
           <div className="container-rhode flex justify-center pt-5 pb-3">
