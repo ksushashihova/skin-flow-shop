@@ -180,6 +180,32 @@ function Index() {
         </Suspense>
       </LazyVisible>
 
+      {/* QUIZ CTA */}
+      <section className="container-rhode py-24">
+        <div className="relative overflow-hidden rounded-3xl bg-[color:var(--rose-mid)] text-background px-8 py-16 md:px-16 md:py-24 grid md:grid-cols-2 gap-10 items-center">
+          <div>
+            <div className="uppercase text-[11px] tracking-[0.3em] opacity-90 mb-4">
+              {t("nav.quiz")}
+            </div>
+            <h2 className="font-display text-3xl md:text-5xl leading-tight">
+              Подберём уход под вашу кожу
+            </h2>
+            <p className="mt-5 max-w-md opacity-95">
+              Короткий опрос — и мы предложим подходящие средства из коллекции ОБЛАКО.
+            </p>
+            <Link
+              to="/quiz"
+              className="inline-block mt-8 border border-background/90 text-background px-8 py-3 text-[11px] uppercase tracking-[0.25em] rounded-full hover:bg-background hover:text-[color:var(--rose-deep)] transition-colors"
+            >
+              Пройти подбор
+            </Link>
+          </div>
+          <div className="hidden md:block">
+            <div className="aspect-[4/5] w-full rounded-2xl bg-[color:var(--rose-deep)]/30 backdrop-blur-sm" />
+          </div>
+        </div>
+      </section>
+
       {/* JOURNAL */}
       {posts.length > 0 && (
         <section className="container-rhode py-24 border-t border-border">
