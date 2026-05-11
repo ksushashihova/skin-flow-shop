@@ -157,6 +157,15 @@ export const api = {
   async loginWithGoogle() {
     throw new Error("Вход через Google недоступен");
   },
+  async requestPasswordReset(email: string) {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const res = await authRequestReset(email, `${origin}/reset-password`);
+    if (res.error) throw new Error(res.error.message || "Не удалось отправить письмо");
+  },
+  async resetPassword(token: string, newPassword: string) {
+    const res = await authResetPassword(newPassword, token);
+    if (res.error) throw new Error(res.error.message || "Не удалось сменить пароль");
+  },
   async me(): Promise<User | null> {
     return (await getMeFn()) as User | null;
   },
