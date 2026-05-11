@@ -3,7 +3,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireAuth, requireAdmin } from "./auth-middleware.server";
 import { db } from "@/db/index.server";
 import { orders, profiles, products, giftCards, userRoles } from "@/db/schema";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
+import { sendMail } from "./mailer.server";
 import {
   computeOrderTotals,
   resolvePromoOrGift,
