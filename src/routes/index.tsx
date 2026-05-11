@@ -80,19 +80,19 @@ function Index() {
             <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-foreground/45 to-transparent pointer-events-none md:rounded-t-3xl" />
             <div className="absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-foreground/40 to-transparent pointer-events-none md:rounded-b-3xl" />
 
-            <div className="absolute left-6 right-6 md:left-12 md:right-12 lg:right-auto bottom-12 md:bottom-16 md:max-w-2xl text-background fade-up">
-              <div className="text-[11px] uppercase tracking-[0.3em] mb-4 opacity-90 [text-shadow:0_1px_8px_rgba(0,0,0,0.35)]">
+            <div className="absolute left-6 right-6 md:left-12 md:right-12 lg:right-auto bottom-12 md:bottom-20 md:max-w-3xl text-background fade-up">
+              <div className="text-xs md:text-sm uppercase tracking-[0.35em] mb-5 text-background [text-shadow:0_2px_10px_rgba(0,0,0,0.6)]">
                 ОБЛАКО
               </div>
-              <h1 className="font-display text-background text-4xl md:text-5xl lg:text-6xl leading-[1.08] [text-shadow:0_2px_18px_rgba(0,0,0,0.45)]">
+              <h1 className="font-display text-background text-5xl md:text-7xl lg:text-8xl leading-[1.02] [text-shadow:0_4px_24px_rgba(74,43,50,0.7)]">
                 {t("hero.title")}
               </h1>
-              <p className="mt-5 text-sm md:text-base opacity-95 max-w-md md:max-w-lg [text-shadow:0_1px_10px_rgba(0,0,0,0.4)]">
+              <p className="mt-6 text-base md:text-xl max-w-md md:max-w-xl text-background [text-shadow:0_2px_14px_rgba(0,0,0,0.55)]">
                 {t("hero.subtitle")}
               </p>
               <Link
                 to="/shop"
-                className="inline-block mt-8 border border-background/90 text-background px-8 py-3 text-[11px] uppercase tracking-[0.25em] rounded-full hover:bg-background hover:text-foreground transition-colors"
+                className="inline-block mt-10 bg-[color:var(--rose-mid)] text-background border border-[color:var(--rose-mid)] px-10 py-4 text-xs md:text-sm uppercase tracking-[0.25em] rounded-full hover:bg-[color:var(--rose-deep)] hover:border-[color:var(--rose-deep)] transition-colors shadow-lg"
               >
                 {t("hero.cta")}
               </Link>
