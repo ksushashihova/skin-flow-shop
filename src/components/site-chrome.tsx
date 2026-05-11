@@ -265,7 +265,7 @@ export function SiteHeader({ variant = "solid" }: { variant?: "solid" | "overlay
                 ))}
               </nav>
               <div />
-              <div className="flex items-center justify-end gap-6 text-xs uppercase tracking-[0.2em]">
+              <div className="flex items-center justify-end gap-6 text-sm uppercase tracking-[0.2em]">
                 <button
                   onClick={() => setLang(lang === "ru" ? "en" : "ru")}
                   className={linkCls}
