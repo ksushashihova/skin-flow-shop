@@ -45,46 +45,71 @@ export const createOrderFn = createServerFn({ method: "POST" })
     if (!data.cart.length) throw new Error("Корзина пуста");
     const userId = context.userId;
 
-    const [profile] = await db.select().from(profiles).where(eq(profiles.id, userId)).limit(1);
-    if (!profile) throw new Error("Профиль не найден");
-
     const items = await expandCartToItems(data.cart);
+    const tracking = data.deliveryMethod === "pickup" ? null : buildTrackingNumber();
+    const eta = estimatedDeliveryFor(data.deliveryMethod);
 
-    const { totalPrice, deliveryPrice, promoDiscount, promoUsed, bonusUsed, bonusEarned } =
-      await computeOrderTotals({
+    // Атомарная операция: списать stock + создать заказ + обновить профиль.
+    const order = await db.transaction(async (tx) => {
+      const [profile] = await tx.select().from(profiles).where(eq(profiles.id, userId)).limit(1);
+      if (!profile) throw new Error("Профиль не найден");
+
+      const totals = await computeOrderTotals({
         items, deliveryMethod: data.deliveryMethod, totalSpent: profile.totalSpent,
         bonusBalance: profile.bonusBalance, bonusUse: data.bonusUse, promoCode: data.promoCode,
       });
 
-    const tracking = data.deliveryMethod === "pickup" ? null : buildTrackingNumber();
-    const eta = estimatedDeliveryFor(data.deliveryMethod);
+      // Проверяем и списываем сток одним UPDATE с CHECK; если не хватает — RAISE.
+      for (const it of items) {
+        const r = await tx.execute(sql`
+          UPDATE products SET stock = stock - ${it.quantity}
+          WHERE id = ${it.productId} AND stock >= ${it.quantity}
+          RETURNING id
+        `);
+        if ((r as unknown as { length: number }).length === 0) {
+          throw new Error(`Недостаточно товара: ${it.name}`);
+        }
+      }
 
-    const [order] = await db.insert(orders).values({
-      userId, userEmail: profile.email,
-      status: "new", totalPrice,
-      items: items as unknown as object,
-      city: data.address.city, addressLine: data.address.addressLine, postalCode: data.address.postalCode,
-      paymentMethod: data.paymentMethod, deliveryMethod: data.deliveryMethod,
-      deliveryPrice, bonusUsed, bonusEarned,
-      promoUsed, promoDiscount,
-      trackingNumber: tracking, estimatedDelivery: eta,
-    }).returning();
+      const [row] = await tx.insert(orders).values({
+        userId, userEmail: profile.email,
+        status: "new", totalPrice: totals.totalPrice,
+        items: items as unknown as object,
+        city: data.address.city, addressLine: data.address.addressLine, postalCode: data.address.postalCode,
+        paymentMethod: data.paymentMethod, deliveryMethod: data.deliveryMethod,
+        deliveryPrice: totals.deliveryPrice,
+        bonusUsed: totals.bonusUsed, bonusEarned: totals.bonusEarned,
+        promoUsed: totals.promoUsed, promoDiscount: totals.promoDiscount,
+        trackingNumber: tracking, estimatedDelivery: eta,
+      }).returning();
 
-    await decrementStock(items);
+      await tx.update(profiles).set({
+        bonusBalance: Math.max(0, profile.bonusBalance - totals.bonusUsed) + totals.bonusEarned,
+        totalSpent: profile.totalSpent + totals.totalPrice,
+      }).where(eq(profiles.id, userId));
 
-    await db.update(profiles).set({
-      bonusBalance: Math.max(0, profile.bonusBalance - bonusUsed),
-      totalSpent: profile.totalSpent + totalPrice,
-    }).where(eq(profiles.id, userId));
+      return { row, totals, profile };
+    });
+
+    // Письмо-подтверждение (best-effort, не валим заказ если SMTP лёг).
+    try {
+      const lines = items.map((i) => `${i.name} × ${i.quantity} — ${i.price * i.quantity} ₽`).join("<br>");
+      await sendMail({
+        to: order.profile.email,
+        subject: `Заказ №${order.row.id.slice(0, 8)} оформлен — ОБЛАКО`,
+        html: `<h2>Спасибо за заказ!</h2><p>Сумма: <b>${order.totals.totalPrice} ₽</b></p><p>${lines}</p>${tracking ? `<p>Трек-номер: <b>${tracking}</b></p>` : ""}`,
+      });
+    } catch (e) { console.error("[order email]", e); }
 
     return {
-      id: order.id, userId, userEmail: profile.email,
-      status: "new" as const, totalPrice, items,
+      id: order.row.id, userId, userEmail: order.profile.email,
+      status: "new" as const, totalPrice: order.totals.totalPrice, items,
       address: { city: data.address.city, addressLine: data.address.addressLine, postalCode: data.address.postalCode },
-      paymentMethod: data.paymentMethod, deliveryMethod: data.deliveryMethod, deliveryPrice,
-      bonusUsed, bonusEarned, promoUsed: promoUsed ?? undefined, promoDiscount,
+      paymentMethod: data.paymentMethod, deliveryMethod: data.deliveryMethod, deliveryPrice: order.totals.deliveryPrice,
+      bonusUsed: order.totals.bonusUsed, bonusEarned: order.totals.bonusEarned,
+      promoUsed: order.totals.promoUsed ?? undefined, promoDiscount: order.totals.promoDiscount,
       trackingNumber: tracking ?? undefined, estimatedDelivery: toISO(eta),
-      createdAt: toISO(order.createdAt)!, updatedAt: toISO(order.updatedAt)!,
+      createdAt: toISO(order.row.createdAt)!, updatedAt: toISO(order.row.updatedAt)!,
     };
   });
 
