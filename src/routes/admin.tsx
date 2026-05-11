@@ -2,6 +2,52 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { api, type Order, type OrderStatus, type User, type Product, type ProductCategory, type Post, type Review, type Bundle, type GiftCard, type Subscriber, type PromoCode, type Banner } from "@/lib/api";
 import { useI18n, formatPrice } from "@/lib/i18n";
+import { S3ImageUpload } from "@/components/admin/s3-image-upload";
+
+// Виджет для управления массивом изображений: загрузка в S3 + ручной ввод URL
+function ImagesArrayUpload({
+  folder,
+  value,
+  onChange,
+}: {
+  folder: string;
+  value: string[];
+  onChange: (next: string[]) => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <S3ImageUpload
+        folder={folder}
+        label="Загрузить и добавить в список"
+        onChange={(url) => onChange([...(value ?? []), url])}
+      />
+      <textarea
+        value={(value ?? []).join("\n")}
+        onChange={(e) => onChange(e.target.value.split(/\n+/).map((s) => s.trim()).filter(Boolean))}
+        rows={3}
+        placeholder="https://..."
+        className="w-full bg-background border border-border px-3 py-3 font-mono text-xs"
+      />
+      {value && value.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {value.map((src, i) => (
+            <div key={i} className="relative group">
+              <img src={src} alt="" className="w-20 h-20 object-cover bg-muted border border-border" />
+              <button
+                type="button"
+                onClick={() => onChange(value.filter((_, j) => j !== i))}
+                className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground w-6 h-6 text-xs rounded-full opacity-0 group-hover:opacity-100 transition"
+                title="Удалить"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Панель администратора — ОБЛАКО" }] }),
