@@ -1,17 +1,22 @@
 import {
-  pgTable, text, integer, boolean, timestamp, jsonb, uuid, pgEnum, primaryKey, unique, index, check,
+  pgSchema, text, integer, boolean, timestamp, jsonb, uuid, primaryKey, unique, index, check,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
+/* ============ schema ============ */
+// Все таблицы проекта живут в отдельной схеме `oblako`,
+// чтобы не пересекаться с другими проектами в той же БД (public).
+export const oblako = pgSchema("oblako");
+
 /* ============ enums ============ */
-export const appRole = pgEnum("app_role", ["admin", "user"]);
-export const orderStatus = pgEnum("order_status", ["new", "paid", "shipped", "completed", "cancelled"]);
-export const paymentMethod = pgEnum("payment_method", ["card_online", "card_on_delivery", "sbp", "cash"]);
-export const deliveryMethod = pgEnum("delivery_method", ["pickup", "courier", "post", "cdek"]);
-export const bannerTextColor = pgEnum("banner_text_color", ["light", "dark"]);
+export const appRole = oblako.enum("app_role", ["admin", "user"]);
+export const orderStatus = oblako.enum("order_status", ["new", "paid", "shipped", "completed", "cancelled"]);
+export const paymentMethod = oblako.enum("payment_method", ["card_online", "card_on_delivery", "sbp", "cash"]);
+export const deliveryMethod = oblako.enum("delivery_method", ["pickup", "courier", "post", "cdek"]);
+export const bannerTextColor = oblako.enum("banner_text_color", ["light", "dark"]);
 
 /* ============ better-auth core (text IDs) ============ */
-export const user = pgTable("user", {
+export const user = oblako.table("user", {
   id: text("id").primaryKey(),
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").notNull().default(false),
@@ -21,7 +26,7 @@ export const user = pgTable("user", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const session = pgTable("session", {
+export const session = oblako.table("session", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
   token: text("token").notNull().unique(),
@@ -32,7 +37,7 @@ export const session = pgTable("session", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const account = pgTable("account", {
+export const account = oblako.table("account", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
   accountId: text("account_id").notNull(),
@@ -48,7 +53,7 @@ export const account = pgTable("account", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const verification = pgTable("verification", {
+export const verification = oblako.table("verification", {
   id: text("id").primaryKey(),
   identifier: text("identifier").notNull(),
   value: text("value").notNull(),
@@ -58,7 +63,7 @@ export const verification = pgTable("verification", {
 });
 
 /* ============ catalog ============ */
-export const categories = pgTable("categories", {
+export const categories = oblako.table("categories", {
   id: text("id").primaryKey(),
   nameRu: text("name_ru").notNull(),
   nameEn: text("name_en").notNull(),
@@ -67,7 +72,7 @@ export const categories = pgTable("categories", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const products = pgTable("products", {
+export const products = oblako.table("products", {
   id: text("id").primaryKey(),
   slug: text("slug").notNull().unique(),
   nameRu: text("name_ru").notNull(),
@@ -90,7 +95,7 @@ export const products = pgTable("products", {
   pricePositive: check("products_price_check", sql`${t.price} >= 0`),
 }));
 
-export const bundles = pgTable("bundles", {
+export const bundles = oblako.table("bundles", {
   id: text("id").primaryKey(),
   slug: text("slug").notNull().unique(),
   name: text("name").notNull(),
@@ -103,7 +108,7 @@ export const bundles = pgTable("bundles", {
   discountRange: check("bundles_discount_check", sql`${t.discountPercent} BETWEEN 0 AND 100`),
 }));
 
-export const bundleItems = pgTable("bundle_items", {
+export const bundleItems = oblako.table("bundle_items", {
   bundleId: text("bundle_id").notNull().references(() => bundles.id, { onDelete: "cascade" }),
   productId: text("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
   position: integer("position").notNull().default(0),
@@ -112,7 +117,7 @@ export const bundleItems = pgTable("bundle_items", {
   byBundle: index("idx_bundle_items_bundle").on(t.bundleId),
 }));
 
-export const posts = pgTable("posts", {
+export const posts = oblako.table("posts", {
   slug: text("slug").primaryKey(),
   title: text("title").notNull(),
   excerpt: text("excerpt").notNull().default(""),
@@ -128,7 +133,7 @@ export const posts = pgTable("posts", {
   byPublished: index("idx_posts_published").on(t.publishedAt),
 }));
 
-export const banners = pgTable("banners", {
+export const banners = oblako.table("banners", {
   id: text("id").primaryKey(),
   title: text("title").notNull(),
   subtitle: text("subtitle").notNull().default(""),
@@ -144,7 +149,7 @@ export const banners = pgTable("banners", {
   bySort: index("idx_banners_sort").on(t.enabled, t.sortOrder),
 }));
 
-export const reviews = pgTable("reviews", {
+export const reviews = oblako.table("reviews", {
   id: text("id").primaryKey(),
   productId: text("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
   userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
@@ -159,7 +164,7 @@ export const reviews = pgTable("reviews", {
 }));
 
 /* ============ users / roles ============ */
-export const profiles = pgTable("profiles", {
+export const profiles = oblako.table("profiles", {
   id: text("id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
   email: text("email").notNull(),
   name: text("name").notNull().default(""),
@@ -170,7 +175,7 @@ export const profiles = pgTable("profiles", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const userRoles = pgTable("user_roles", {
+export const userRoles = oblako.table("user_roles", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
   role: appRole("role").notNull(),
@@ -180,7 +185,7 @@ export const userRoles = pgTable("user_roles", {
 }));
 
 /* ============ commerce ============ */
-export const addresses = pgTable("addresses", {
+export const addresses = oblako.table("addresses", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
   city: text("city").notNull(),
@@ -191,7 +196,7 @@ export const addresses = pgTable("addresses", {
   byUser: index("idx_addresses_user").on(t.userId),
 }));
 
-export const promos = pgTable("promos", {
+export const promos = oblako.table("promos", {
   code: text("code").primaryKey(),
   percent: integer("percent"),
   amount: integer("amount"),
@@ -200,7 +205,7 @@ export const promos = pgTable("promos", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const orders = pgTable("orders", {
+export const orders = oblako.table("orders", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: text("user_id").notNull().references(() => user.id, { onDelete: "restrict" }),
   userEmail: text("user_email").notNull(),
@@ -226,7 +231,7 @@ export const orders = pgTable("orders", {
   byStatus: index("idx_orders_status").on(t.status),
 }));
 
-export const consents = pgTable("consents", {
+export const consents = oblako.table("consents", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
   email: text("email"),
@@ -239,14 +244,14 @@ export const consents = pgTable("consents", {
   byUser: index("idx_consents_user").on(t.userId),
 }));
 
-export const subscribers = pgTable("subscribers", {
+export const subscribers = oblako.table("subscribers", {
   email: text("email").primaryKey(),
   consent: boolean("consent").notNull().default(false),
   promoCode: text("promo_code"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const giftCards = pgTable("gift_cards", {
+export const giftCards = oblako.table("gift_cards", {
   code: text("code").primaryKey(),
   amount: integer("amount").notNull(),
   design: text("design").notNull().default("minimal"),
