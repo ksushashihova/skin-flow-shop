@@ -6,6 +6,9 @@
 // src/lib/*.functions.ts as createServerFn handlers.
 
 import { supabase } from "@/integrations/supabase/client";
+// Loose-typed alias to bypass strict generated types in mappings.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const db: any = supabase;
 import {
   createOrderFn,
   cancelOrderFn,
@@ -220,8 +223,8 @@ function bundlePriceCalc(b: Bundle, products: Product[]): { full: number; discou
 
 async function loadBundlesWithItems(): Promise<Bundle[]> {
   const [{ data: bundlesData }, { data: itemsData }] = await Promise.all([
-    supabase.from("bundles").select("*").order("created_at", { ascending: false }),
-    supabase.from("bundle_items").select("*").order("position", { ascending: true }),
+    db.from("bundles").select("*").order("created_at", { ascending: false }),
+    db.from("bundle_items").select("*").order("position", { ascending: true }),
   ]);
   const items = (itemsData || []) as { bundle_id: string; product_id: string; position: number }[];
   return ((bundlesData || []) as { id: string; slug: string; name: string; description: string; cover: string; discount_percent: number }[]).map((b) => ({
@@ -250,8 +253,8 @@ async function getCurrentUser(): Promise<User | null> {
   if (!session) return null;
   const uid = session.user.id;
   const [{ data: profile }, { data: roles }] = await Promise.all([
-    supabase.from("profiles").select("*").eq("id", uid).maybeSingle(),
-    supabase.from("user_roles").select("role").eq("user_id", uid),
+    db.from("profiles").select("*").eq("id", uid).maybeSingle(),
+    db.from("user_roles").select("role").eq("user_id", uid),
   ]);
   if (!profile) return null;
   const role: Role = (roles || []).some((r) => r.role === "admin") ? "admin" : "user";
@@ -311,14 +314,14 @@ export const api = {
     const upd: Record<string, unknown> = {};
     if (patch.name !== undefined) upd.name = patch.name;
     if (patch.phone !== undefined) upd.phone = patch.phone;
-    const { error } = await supabase.from("profiles").update(upd).eq("id", session.user.id);
+    const { error } = await db.from("profiles").update(upd).eq("id", session.user.id);
     if (error) throw new Error(error.message);
     return (await getCurrentUser())!;
   },
 
   /* ----- products ----- */
   async listProducts(query = "", categoryId?: string): Promise<Product[]> {
-    let q = supabase.from("products").select("*").order("created_at", { ascending: false });
+    let q = db.from("products").select("*").order("created_at", { ascending: false });
     if (categoryId) q = q.eq("category_id", categoryId);
     const { data, error } = await q;
     if (error) throw new Error(error.message);
@@ -332,13 +335,13 @@ export const api = {
     return list;
   },
   async getProduct(idOrSlug: string): Promise<Product | null> {
-    const { data } = await supabase.from("products").select("*").or(`id.eq.${idOrSlug},slug.eq.${idOrSlug}`).maybeSingle();
+    const { data } = await db.from("products").select("*").or(`id.eq.${idOrSlug},slug.eq.${idOrSlug}`).maybeSingle();
     return data ? mapProduct(data as ProductRow) : null;
   },
 
   /* ----- categories ----- */
   async listCategories(): Promise<ProductCategory[]> {
-    const { data } = await supabase.from("categories").select("*").order("sort_order");
+    const { data } = await db.from("categories").select("*").order("sort_order");
     return ((data || []) as { id: string; name_ru: string; name_en: string }[]).map((r) => ({
       id: r.id, name_ru: r.name_ru, name_en: r.name_en,
     }));
@@ -346,26 +349,26 @@ export const api = {
   async adminCreateCategory(input: { name_ru: string; name_en: string; id?: string }): Promise<ProductCategory> {
     const id = (input.id || input.name_ru || "cat").toLowerCase().trim()
       .replace(/[^a-z0-9а-я]+/gi, "-").replace(/^-+|-+$/g, "").slice(0, 32) || "cat_" + Math.random().toString(36).slice(2, 6);
-    const { data, error } = await supabase.from("categories").insert({ id, name_ru: input.name_ru, name_en: input.name_en || input.name_ru }).select().single();
+    const { data, error } = await db.from("categories").insert({ id, name_ru: input.name_ru, name_en: input.name_en || input.name_ru }).select().single();
     if (error) throw new Error(error.message);
     return data as ProductCategory;
   },
   async adminUpdateCategory(id: string, patch: Partial<Omit<ProductCategory, "id">>): Promise<ProductCategory> {
-    const { data, error } = await supabase.from("categories").update(patch).eq("id", id).select().single();
+    const { data, error } = await db.from("categories").update(patch).eq("id", id).select().single();
     if (error) throw new Error(error.message);
     return data as ProductCategory;
   },
   async adminDeleteCategory(id: string): Promise<void> {
-    const { count } = await supabase.from("products").select("id", { count: "exact", head: true }).eq("category_id", id);
+    const { count } = await db.from("products").select("id", { count: "exact", head: true }).eq("category_id", id);
     if ((count ?? 0) > 0) throw new Error("Нельзя удалить категорию: к ней привязаны товары");
-    const { error } = await supabase.from("categories").delete().eq("id", id);
+    const { error } = await db.from("categories").delete().eq("id", id);
     if (error) throw new Error(error.message);
   },
 
   /* ----- cart (localStorage) ----- */
   async getCart(): Promise<CartItem[]> { return loadCart(); },
   async addToCart(productId: string, quantity = 1): Promise<CartItem[]> {
-    const { data: p } = await supabase.from("products").select("stock").eq("id", productId).maybeSingle();
+    const { data: p } = await db.from("products").select("stock").eq("id", productId).maybeSingle();
     if (!p) throw new Error("Товар не найден");
     const cart = loadCart();
     const existing = cart.find((c) => c.productId === productId && !c.bundleId);
@@ -415,12 +418,12 @@ export const api = {
   async listOrders(): Promise<Order[]> {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return [];
-    const { data, error } = await supabase.from("orders").select("*").eq("user_id", session.user.id).order("created_at", { ascending: false });
+    const { data, error } = await db.from("orders").select("*").eq("user_id", session.user.id).order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return ((data || []) as OrderRow[]).map(mapOrder);
   },
   async getOrder(id: string): Promise<Order | null> {
-    const { data } = await supabase.from("orders").select("*").eq("id", id).maybeSingle();
+    const { data } = await db.from("orders").select("*").eq("id", id).maybeSingle();
     return data ? mapOrder(data as OrderRow) : null;
   },
   async cancelOrder(id: string): Promise<Order> {
@@ -431,18 +434,18 @@ export const api = {
 
   /* ----- admin orders/users ----- */
   async adminListOrders(): Promise<Order[]> {
-    const { data } = await supabase.from("orders").select("*").order("created_at", { ascending: false });
+    const { data } = await db.from("orders").select("*").order("created_at", { ascending: false });
     return ((data || []) as OrderRow[]).map(mapOrder);
   },
   async adminUpdateOrder(id: string, status: OrderStatus): Promise<Order> {
-    const { data, error } = await supabase.from("orders").update({ status }).eq("id", id).select().single();
+    const { data, error } = await db.from("orders").update({ status }).eq("id", id).select().single();
     if (error) throw new Error(error.message);
     return mapOrder(data as OrderRow);
   },
   async adminUpdateOrderTracking(id: string, trackingNumber: string, estimatedDelivery?: string): Promise<Order> {
     const upd: Record<string, unknown> = { tracking_number: trackingNumber };
     if (estimatedDelivery) upd.estimated_delivery = estimatedDelivery;
-    const { data, error } = await supabase.from("orders").update(upd).eq("id", id).select().single();
+    const { data, error } = await db.from("orders").update(upd).eq("id", id).select().single();
     if (error) throw new Error(error.message);
     return mapOrder(data as OrderRow);
   },
@@ -450,7 +453,7 @@ export const api = {
     return adminListUsersFn() as Promise<User[]>;
   },
   async adminGetUserOrders(userId: string): Promise<Order[]> {
-    const { data } = await supabase.from("orders").select("*").eq("user_id", userId).order("created_at", { ascending: false });
+    const { data } = await db.from("orders").select("*").eq("user_id", userId).order("created_at", { ascending: false });
     return ((data || []) as OrderRow[]).map(mapOrder);
   },
 
@@ -459,57 +462,57 @@ export const api = {
     const id = "p_" + Math.random().toString(36).slice(2, 8);
     const slug = input.slug?.trim() || id;
     const row = { id, slug, ...productToRow(input) };
-    const { data, error } = await supabase.from("products").insert(row).select().single();
+    const { data, error } = await db.from("products").insert(row).select().single();
     if (error) throw new Error(error.message);
     return mapProduct(data as ProductRow);
   },
   async adminUpdateProduct(id: string, patch: Partial<Product>): Promise<Product> {
-    const { data, error } = await supabase.from("products").update(productToRow(patch)).eq("id", id).select().single();
+    const { data, error } = await db.from("products").update(productToRow(patch)).eq("id", id).select().single();
     if (error) throw new Error(error.message);
     return mapProduct(data as ProductRow);
   },
   async adminDeleteProduct(id: string): Promise<{ ok: true }> {
-    const { error } = await supabase.from("products").delete().eq("id", id);
+    const { error } = await db.from("products").delete().eq("id", id);
     if (error) throw new Error(error.message);
     return { ok: true };
   },
 
   /* ----- posts ----- */
   async listPosts(): Promise<Post[]> {
-    const { data } = await supabase.from("posts").select("*").order("published_at", { ascending: false });
+    const { data } = await db.from("posts").select("*").order("published_at", { ascending: false });
     return ((data || []) as PostRow[]).map(mapPost);
   },
   async getPost(slug: string): Promise<Post | null> {
-    const { data } = await supabase.from("posts").select("*").eq("slug", slug).maybeSingle();
+    const { data } = await db.from("posts").select("*").eq("slug", slug).maybeSingle();
     return data ? mapPost(data as PostRow) : null;
   },
   async adminCreatePost(input: Omit<Post, "slug"> & { slug?: string }): Promise<Post> {
     const slug = input.slug?.trim() || "post-" + Math.random().toString(36).slice(2, 8);
-    const { data, error } = await supabase.from("posts").insert({ slug, ...postToRow(input) }).select().single();
+    const { data, error } = await db.from("posts").insert({ slug, ...postToRow(input) }).select().single();
     if (error) throw new Error(error.message);
     return mapPost(data as PostRow);
   },
   async adminUpdatePost(slug: string, patch: Partial<Post>): Promise<Post> {
-    const { data, error } = await supabase.from("posts").update(postToRow(patch)).eq("slug", slug).select().single();
+    const { data, error } = await db.from("posts").update(postToRow(patch)).eq("slug", slug).select().single();
     if (error) throw new Error(error.message);
     return mapPost(data as PostRow);
   },
   async adminDeletePost(slug: string): Promise<{ ok: true }> {
-    const { error } = await supabase.from("posts").delete().eq("slug", slug);
+    const { error } = await db.from("posts").delete().eq("slug", slug);
     if (error) throw new Error(error.message);
     return { ok: true };
   },
 
   /* ----- reviews ----- */
   async listReviews(productId: string): Promise<Review[]> {
-    const { data } = await supabase.from("reviews").select("*").eq("product_id", productId).order("created_at", { ascending: false });
+    const { data } = await db.from("reviews").select("*").eq("product_id", productId).order("created_at", { ascending: false });
     return ((data || []) as ReviewRow[]).map(mapReview);
   },
   async addReview(input: Omit<Review, "id" | "createdAt" | "userId">): Promise<Review> {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) throw new Error("Войдите, чтобы оставить отзыв");
     const id = "r_" + Math.random().toString(36).slice(2, 8);
-    const { data, error } = await supabase.from("reviews").insert({
+    const { data, error } = await db.from("reviews").insert({
       id, product_id: input.productId, user_id: session.user.id,
       author_name: input.authorName, rating: input.rating, text: input.text, photos: input.photos || [],
     }).select().single();
@@ -517,12 +520,12 @@ export const api = {
     return mapReview(data as ReviewRow);
   },
   async adminDeleteReview(id: string): Promise<{ ok: true }> {
-    const { error } = await supabase.from("reviews").delete().eq("id", id);
+    const { error } = await db.from("reviews").delete().eq("id", id);
     if (error) throw new Error(error.message);
     return { ok: true };
   },
   async adminListReviews(): Promise<Review[]> {
-    const { data } = await supabase.from("reviews").select("*").order("created_at", { ascending: false });
+    const { data } = await db.from("reviews").select("*").order("created_at", { ascending: false });
     return ((data || []) as ReviewRow[]).map(mapReview);
   },
 
@@ -536,13 +539,13 @@ export const api = {
   async adminCreateBundle(input: Omit<Bundle, "id" | "slug"> & { slug?: string }): Promise<Bundle> {
     const id = "b_" + Math.random().toString(36).slice(2, 8);
     const slug = input.slug?.trim() || id;
-    const { error } = await supabase.from("bundles").insert({
+    const { error } = await db.from("bundles").insert({
       id, slug, name: input.name, description: input.description,
       cover: input.cover, discount_percent: input.discountPercent,
     });
     if (error) throw new Error(error.message);
     if (input.productIds.length) {
-      await supabase.from("bundle_items").insert(
+      await db.from("bundle_items").insert(
         input.productIds.map((pid, i) => ({ bundle_id: id, product_id: pid, position: i })),
       );
     }
@@ -556,13 +559,13 @@ export const api = {
     if (patch.discountPercent !== undefined) upd.discount_percent = patch.discountPercent;
     if (patch.slug !== undefined) upd.slug = patch.slug;
     if (Object.keys(upd).length) {
-      const { error } = await supabase.from("bundles").update(upd).eq("id", id);
+      const { error } = await db.from("bundles").update(upd).eq("id", id);
       if (error) throw new Error(error.message);
     }
     if (patch.productIds) {
-      await supabase.from("bundle_items").delete().eq("bundle_id", id);
+      await db.from("bundle_items").delete().eq("bundle_id", id);
       if (patch.productIds.length) {
-        await supabase.from("bundle_items").insert(
+        await db.from("bundle_items").insert(
           patch.productIds.map((pid, i) => ({ bundle_id: id, product_id: pid, position: i })),
         );
       }
@@ -570,8 +573,8 @@ export const api = {
     return (await this.getBundle(id))!;
   },
   async adminDeleteBundle(id: string): Promise<{ ok: true }> {
-    await supabase.from("bundle_items").delete().eq("bundle_id", id);
-    const { error } = await supabase.from("bundles").delete().eq("id", id);
+    await db.from("bundle_items").delete().eq("bundle_id", id);
+    const { error } = await db.from("bundles").delete().eq("id", id);
     if (error) throw new Error(error.message);
     return { ok: true };
   },
@@ -581,7 +584,7 @@ export const api = {
     return createGiftCardFn({ data: input }) as Promise<GiftCard>;
   },
   async adminListGiftCards(): Promise<GiftCard[]> {
-    const { data } = await supabase.from("gift_cards").select("*").order("created_at", { ascending: false });
+    const { data } = await db.from("gift_cards").select("*").order("created_at", { ascending: false });
     return ((data || []) as { code: string; amount: number; remaining: number; design: GiftCard["design"]; recipient_email: string; message: string | null; buyer_user_id: string | null; created_at: string }[]).map((r) => ({
       code: r.code, amount: r.amount, remaining: r.remaining, design: r.design,
       recipientEmail: r.recipient_email, message: r.message ?? undefined,
@@ -593,20 +596,20 @@ export const api = {
   async subscribe(email: string, consent: boolean): Promise<{ subscriber: Subscriber; promo: PromoCode }> {
     if (!consent) throw new Error("Необходимо согласие на обработку данных");
     if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) throw new Error("Некорректный email");
-    const { error } = await supabase.from("subscribers").insert({ email, consent, promo_code: "WELCOME10" });
+    const { error } = await db.from("subscribers").insert({ email, consent, promo_code: "WELCOME10" });
     if (error) {
       if (error.code === "23505") throw new Error("Вы уже подписаны");
       throw new Error(error.message);
     }
     // Log consent (best-effort)
-    await supabase.from("consents").insert({ email, kind: "marketing" }).then(() => undefined, () => undefined);
+    await db.from("consents").insert({ email, kind: "marketing" }).then(() => undefined, () => undefined);
     return {
       subscriber: { email, consent, promoCode: "WELCOME10", createdAt: new Date().toISOString() },
       promo: { code: "WELCOME10", percent: 10, description: "Скидка 10% за подписку на рассылку" },
     };
   },
   async adminListSubscribers(): Promise<Subscriber[]> {
-    const { data } = await supabase.from("subscribers").select("*").order("created_at", { ascending: false });
+    const { data } = await db.from("subscribers").select("*").order("created_at", { ascending: false });
     return ((data || []) as { email: string; consent: boolean; promo_code: string | null; created_at: string }[]).map((r) => ({
       email: r.email, consent: r.consent, promoCode: r.promo_code || "", createdAt: r.created_at,
     }));
@@ -614,7 +617,7 @@ export const api = {
 
   /* ----- promos ----- */
   async adminListPromos(): Promise<PromoCode[]> {
-    const { data } = await supabase.from("promos").select("*").order("created_at", { ascending: false });
+    const { data } = await db.from("promos").select("*").order("created_at", { ascending: false });
     return ((data || []) as { code: string; percent: number | null; amount: number | null; description: string; uses_left: number | null }[]).map((r) => ({
       code: r.code, percent: r.percent ?? undefined, amount: r.amount ?? undefined,
       description: r.description, usesLeft: r.uses_left ?? undefined,
@@ -624,7 +627,7 @@ export const api = {
     const code = input.code.trim().toUpperCase();
     if (!code) throw new Error("Код промокода обязателен");
     if (!input.percent && !input.amount) throw new Error("Укажите процент или фиксированную сумму");
-    const { error } = await supabase.from("promos").insert({
+    const { error } = await db.from("promos").insert({
       code, percent: input.percent ?? null, amount: input.amount ?? null,
       description: input.description || `Скидка ${input.percent ? input.percent + "%" : input.amount + " ₽"}`,
       uses_left: input.usesLeft ?? null,
@@ -636,33 +639,33 @@ export const api = {
     return { ...input, code };
   },
   async adminDeletePromo(code: string): Promise<{ ok: true }> {
-    const { error } = await supabase.from("promos").delete().eq("code", code);
+    const { error } = await db.from("promos").delete().eq("code", code);
     if (error) throw new Error(error.message);
     return { ok: true };
   },
 
   /* ----- banners ----- */
   async listBanners(): Promise<Banner[]> {
-    const { data } = await supabase.from("banners").select("*").order("sort_order");
+    const { data } = await db.from("banners").select("*").order("sort_order");
     return ((data || []) as BannerRow[]).map(mapBanner);
   },
   async adminListBanners(): Promise<Banner[]> {
-    const { data } = await supabase.from("banners").select("*").order("sort_order");
+    const { data } = await db.from("banners").select("*").order("sort_order");
     return ((data || []) as BannerRow[]).map(mapBanner);
   },
   async adminCreateBanner(input: Omit<Banner, "id">): Promise<Banner> {
     const id = "bn_" + Math.random().toString(36).slice(2, 8);
-    const { data, error } = await supabase.from("banners").insert({ id, ...bannerToRow(input) }).select().single();
+    const { data, error } = await db.from("banners").insert({ id, ...bannerToRow(input) }).select().single();
     if (error) throw new Error(error.message);
     return mapBanner(data as BannerRow);
   },
   async adminUpdateBanner(id: string, patch: Partial<Banner>): Promise<Banner> {
-    const { data, error } = await supabase.from("banners").update(bannerToRow(patch)).eq("id", id).select().single();
+    const { data, error } = await db.from("banners").update(bannerToRow(patch)).eq("id", id).select().single();
     if (error) throw new Error(error.message);
     return mapBanner(data as BannerRow);
   },
   async adminDeleteBanner(id: string): Promise<{ ok: true }> {
-    const { error } = await supabase.from("banners").delete().eq("id", id);
+    const { error } = await db.from("banners").delete().eq("id", id);
     if (error) throw new Error(error.message);
     return { ok: true };
   },
