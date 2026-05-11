@@ -77,8 +77,8 @@ function Index() {
     fetchPriority="high"
     decoding="async"
   />
-            <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-black/55 to-transparent pointer-events-none md:rounded-t-3xl" />
-            <div className="absolute inset-x-0 bottom-0 h-[70%] bg-gradient-to-t from-black/70 via-black/35 to-transparent pointer-events-none md:rounded-b-3xl" />
+            {/* overlays removed for clean image */}
+
 
             <div className="absolute left-6 right-6 md:left-12 md:right-12 lg:right-auto bottom-12 md:bottom-20 md:max-w-3xl fade-up">
               <div className="text-xs md:text-sm uppercase tracking-[0.35em] mb-5 text-[color:var(--rose-deep)] [text-shadow:0_1px_8px_rgba(245,236,223,0.9)]">
