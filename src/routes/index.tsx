@@ -77,17 +77,17 @@ function Index() {
     fetchPriority="high"
     decoding="async"
   />
-            <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-black/55 to-transparent pointer-events-none md:rounded-t-3xl" />
-            <div className="absolute inset-x-0 bottom-0 h-[70%] bg-gradient-to-t from-black/70 via-black/35 to-transparent pointer-events-none md:rounded-b-3xl" />
+            {/* overlays removed for clean image */}
 
-            <div className="absolute left-6 right-6 md:left-12 md:right-12 lg:right-auto bottom-12 md:bottom-20 md:max-w-3xl text-background fade-up">
-              <div className="text-xs md:text-sm uppercase tracking-[0.35em] mb-5 text-background [text-shadow:0_2px_10px_rgba(0,0,0,0.6)]">
+
+            <div className="absolute left-6 right-6 md:left-12 md:right-12 lg:right-auto bottom-12 md:bottom-20 md:max-w-3xl fade-up">
+              <div className="text-xs md:text-sm uppercase tracking-[0.35em] mb-5 text-[color:var(--rose-deep)] [text-shadow:0_1px_8px_rgba(245,236,223,0.9)]">
                 ОБЛАКО
               </div>
-              <h1 className="font-display text-background text-5xl md:text-7xl lg:text-8xl leading-[1.02] [text-shadow:0_4px_24px_rgba(74,43,50,0.7)]">
+              <h1 className="font-display text-[color:var(--broun)] text-5xl md:text-7xl lg:text-8xl leading-[1.02] [text-shadow:0_2px_18px_rgba(245,236,223,0.85)]">
                 {t("hero.title")}
               </h1>
-              <p className="mt-6 text-base md:text-xl max-w-md md:max-w-xl text-background [text-shadow:0_2px_14px_rgba(0,0,0,0.55)]">
+              <p className="mt-6 text-base md:text-xl max-w-md md:max-w-xl text-[color:var(--rose-deep)] [text-shadow:0_1px_10px_rgba(245,236,223,0.85)]">
                 {t("hero.subtitle")}
               </p>
               <Link

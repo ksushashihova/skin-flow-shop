@@ -61,7 +61,7 @@ function MobileDrawer({
   return (
     <div
       onClick={onClose}
-      className={`fixed inset-0 z-[90] md:hidden transition-opacity duration-300 ${open ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+      className={`fixed inset-0 z-[90] lg:hidden transition-opacity duration-300 ${open ? "opacity-100" : "opacity-0 pointer-events-none"}`}
       aria-hidden={!open}
     >
       <div className="absolute inset-0 bg-foreground/55 backdrop-blur-sm" />
@@ -202,8 +202,8 @@ export function SiteHeader({ variant = "solid" }: { variant?: "solid" | "overlay
 
   return (
     <header className={wrapperCls}>
-      {/* MOBILE */}
-      <div className={`md:hidden ${logoBarCls} border-b border-border`}>
+      {/* MOBILE + TABLET */}
+      <div className={`lg:hidden ${logoBarCls} border-b border-border`}>
         <div className="container-rhode">
           <div className="grid grid-cols-3 items-center h-16">
             <div className="flex items-center">
@@ -240,7 +240,7 @@ export function SiteHeader({ variant = "solid" }: { variant?: "solid" | "overlay
       </div>
 
       {/* DESKTOP */}
-      <div className="hidden md:block">
+      <div className="hidden lg:block">
         {/* Лого-строка — всегда на белом */}
         <div className={logoBarCls}>
           <div className="container-rhode flex justify-center pt-5 pb-3">
