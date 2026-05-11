@@ -936,28 +936,13 @@ function PostForm({
 
         <div className="md:col-span-2">
           <label className="block text-xs uppercase tracking-widest text-muted-foreground mb-2">
-            Фотографии в статье (по одной ссылке в строке)
+            Фотографии в статье
           </label>
-          <textarea
-            value={(data.images ?? []).join("\n")}
-            onChange={(e) =>
-              set(
-                "images",
-                e.target.value.split(/\n+/).map((s) => s.trim()).filter(Boolean),
-              )
-            }
-            rows={4}
-            placeholder="https://...
-https://..."
-            className="w-full bg-background border border-border px-3 py-3 text-sm"
+          <ImagesArrayUpload
+            folder="posts"
+            value={data.images ?? []}
+            onChange={(next) => set("images", next)}
           />
-          {data.images && data.images.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {data.images.map((src, i) => (
-                <img key={i} src={src} alt="" className="w-24 h-24 object-cover bg-muted" />
-              ))}
-            </div>
-          )}
         </div>
 
         <div className="md:col-span-2">
