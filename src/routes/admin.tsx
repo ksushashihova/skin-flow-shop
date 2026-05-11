@@ -906,15 +906,14 @@ function PostForm({
         <Field label="Категория" value={data.category} onChange={(v) => set("category", v)} />
         <Field label="Дата" value={data.date} onChange={(v) => set("date", v)} />
         <div className="md:col-span-2">
-          <label className="block text-xs uppercase tracking-widest text-muted-foreground mb-2">Обложка (URL)</label>
+          <label className="block text-xs uppercase tracking-widest text-muted-foreground mb-2">Обложка</label>
+          <S3ImageUpload folder="posts" value={data.cover} onChange={(url) => set("cover", url)} />
           <input
             value={data.cover}
             onChange={(e) => set("cover", e.target.value)}
-            className="w-full bg-background border border-border px-3 py-3"
+            placeholder="или вставьте URL вручную"
+            className="w-full bg-background border border-border px-3 py-3 mt-3 text-xs"
           />
-          {data.cover && (
-            <img src={data.cover} alt="" className="mt-3 w-48 h-32 object-cover bg-muted" />
-          )}
         </div>
         <div className="md:col-span-2">
           <label className="block text-xs uppercase tracking-widest text-muted-foreground mb-2">Краткое описание</label>
