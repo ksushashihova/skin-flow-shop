@@ -256,8 +256,8 @@ export function SiteHeader({ variant = "solid" }: { variant?: "solid" | "overlay
         {/* Nav-строка — прозрачная на главной (overlay) */}
         <div className={navBarCls}>
           <div className={isOverlay ? "px-10" : "container-rhode"}>
-            <div className="grid grid-cols-3 items-center h-12">
-              <nav className="flex items-center gap-7 text-xs uppercase tracking-[0.2em]">
+            <div className="grid grid-cols-3 items-center h-14">
+              <nav className="flex items-center gap-8 text-sm uppercase tracking-[0.2em]">
                 {NAV_LINKS.slice(0, 5).map((l) => (
                   <Link key={l.to} to={l.to} className={linkCls} activeProps={{ className: "font-semibold" }}>
                     {t(l.key)}
@@ -265,7 +265,7 @@ export function SiteHeader({ variant = "solid" }: { variant?: "solid" | "overlay
                 ))}
               </nav>
               <div />
-              <div className="flex items-center justify-end gap-6 text-xs uppercase tracking-[0.2em]">
+              <div className="flex items-center justify-end gap-6 text-sm uppercase tracking-[0.2em]">
                 <button
                   onClick={() => setLang(lang === "ru" ? "en" : "ru")}
                   className={linkCls}
