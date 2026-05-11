@@ -61,7 +61,7 @@ function MobileDrawer({
   return (
     <div
       onClick={onClose}
-      className={`fixed inset-0 z-[90] md:hidden transition-opacity duration-300 ${open ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+      className={`fixed inset-0 z-[90] lg:hidden transition-opacity duration-300 ${open ? "opacity-100" : "opacity-0 pointer-events-none"}`}
       aria-hidden={!open}
     >
       <div className="absolute inset-0 bg-foreground/55 backdrop-blur-sm" />
