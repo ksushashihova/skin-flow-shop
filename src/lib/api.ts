@@ -257,7 +257,7 @@ async function getCurrentUser(): Promise<User | null> {
     db.from("user_roles").select("role").eq("user_id", uid),
   ]);
   if (!profile) return null;
-  const role: Role = (roles || []).some((r) => r.role === "admin") ? "admin" : "user";
+  const role: Role = (roles || []).some((r: { role: string }) => r.role === "admin") ? "admin" : "user";
   return {
     id: profile.id, email: profile.email, role,
     name: profile.name || "", phone: profile.phone ?? undefined,
