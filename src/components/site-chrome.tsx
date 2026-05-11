@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { api, type User } from "@/lib/api";
 
+
 const NAV_LINKS = [
   { to: "/shop" as const, key: "nav.shop" as const },
   { to: "/bundles" as const, key: "nav.bundles" as const },
@@ -70,9 +71,13 @@ function MobileDrawer({
       >
         {/* header */}
         <div className="flex items-center justify-between px-7 h-16 border-b border-border shrink-0">
-          <Link to="/" onClick={onClose} className="font-display text-xl tracking-tight">
-            ОБЛАКО
-          </Link>
+          <Link to="/" onClick={onClose} className="flex items-center">
+  <img
+    src="/images/logo.png"
+    alt="ОБЛАКО"
+    className="h-12 w-auto object-contain"
+  />
+</Link>
           <button
             onClick={onClose}
             aria-label="Закрыть"
@@ -213,9 +218,13 @@ export function SiteHeader({ variant = "solid" }: { variant?: "solid" | "overlay
               </button>
             </div>
             <div className="flex justify-center">
-              <Link to="/" className="font-display text-xl tracking-tight whitespace-nowrap">
-                ОБЛАКО
-              </Link>
+              <Link to="/" className="flex items-center justify-center">
+  <img
+    src="/images/logo.png"
+    alt="ОБЛАКО"
+    className="h-14 w-auto object-contain"
+  />
+</Link>
             </div>
             <div className="flex items-center justify-end gap-4 text-xs uppercase tracking-[0.2em]">
               <Link to="/cart" className="flex items-center gap-1 hover-underline">
@@ -235,9 +244,13 @@ export function SiteHeader({ variant = "solid" }: { variant?: "solid" | "overlay
         {/* Лого-строка — всегда на белом */}
         <div className={logoBarCls}>
           <div className="container-rhode flex justify-center pt-5 pb-3">
-            <Link to="/" className="font-display text-2xl lg:text-3xl tracking-tight whitespace-nowrap text-foreground">
-              ОБЛАКО
-            </Link>
+            <Link to="/" className="flex items-center justify-center">
+  <img
+    src="/images/logo.png"
+    alt="ОБЛАКО"
+    className="h-20 w-auto object-contain"
+  />
+</Link>
           </div>
         </div>
         {/* Nav-строка — прозрачная на главной (overlay) */}

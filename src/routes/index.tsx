@@ -61,29 +61,30 @@ function Index() {
       <section className="relative">
         <div className="px-0 md:px-6 pt-0">
           <div className="relative w-full h-[80vh] min-h-[560px] md:h-[82vh] md:min-h-[660px] overflow-hidden bg-muted md:rounded-3xl">
-            <img
-              src="https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&fm=webp&w=1600&q=70"
-              srcSet={[
-                "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&fm=webp&w=640&q=65 640w",
-                "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&fm=webp&w=960&q=65 960w",
-                "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&fm=webp&w=1280&q=70 1280w",
-                "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&fm=webp&w=1600&q=70 1600w",
-                "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&fm=webp&w=2000&q=72 2000w",
-              ].join(", ")}
-              sizes="(max-width: 768px) 100vw, (max-width: 1280px) 100vw, 1600px"
-              alt=""
-              fetchPriority="high"
-              decoding="async"
-              className="absolute inset-0 w-full h-full object-cover"
-            />
+  {/* Картинка для мобилки */}
+  <img
+    src="/images/hero-mobile.webp"
+    alt=""
+    className="absolute inset-0 w-full h-full object-cover md:hidden"
+    fetchPriority="high"
+    decoding="async"
+  />
+  {/* Картинка для десктопа */}
+  <img
+    src="/images/hero-desktop.webp"
+    alt=""
+    className="absolute inset-0 w-full h-full object-cover object-[right_top] hidden md:block"
+    fetchPriority="high"
+    decoding="async"
+  />
             <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-foreground/45 to-transparent pointer-events-none md:rounded-t-3xl" />
             <div className="absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-foreground/40 to-transparent pointer-events-none md:rounded-b-3xl" />
 
             <div className="absolute left-6 right-6 md:left-12 md:right-auto bottom-12 md:bottom-16 md:max-w-xl text-background fade-up">
               <div className="text-[11px] uppercase tracking-[0.3em] mb-4 opacity-90">
-                Новая коллекция
+                ОБЛАКО
               </div>
-              <h1 className="font-display text-4xl md:text-6xl leading-[1.05]">
+              <h1 className="font-display text-[color:var(--broun)] text-4xl md:text-7xl leading-[1.05]">
                 {t("hero.title")}
               </h1>
               <p className="mt-5 text-sm md:text-base opacity-90 max-w-md">
