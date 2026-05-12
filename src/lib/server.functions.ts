@@ -61,7 +61,7 @@ export const createOrderFn = createServerFn({ method: "POST" })
       // Проверяем и списываем сток одним UPDATE с CHECK; если не хватает — RAISE.
       for (const it of items) {
         const r = await tx.execute(sql`
-          UPDATE products SET stock = stock - ${it.quantity}
+          UPDATE oblako.products SET stock = stock - ${it.quantity}
           WHERE id = ${it.productId} AND stock >= ${it.quantity}
           RETURNING id
         `);

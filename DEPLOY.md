@@ -82,11 +82,11 @@ sudo certbot --nginx -d example.ru
 
 ## 5. Создание первого админа
 
-После регистрации в форме на сайте:
+После регистрации в форме на сайте (все таблицы проекта живут в схеме `oblako`):
 
 ```sql
-INSERT INTO user_roles (user_id, role)
-SELECT id, 'admin' FROM "user" WHERE email = 'you@example.ru';
+INSERT INTO oblako.user_roles (user_id, role)
+SELECT id, 'admin' FROM oblako."user" WHERE email = 'you@example.ru';
 ```
 
 ## 6. Обновление кода
