@@ -43,14 +43,19 @@ curl -fsSL https://bun.sh/install | bash
 git clone <repo> /var/www/oblako
 cd /var/www/oblako
 bun install
-bunx drizzle-kit push                              # схема в БД
+bunx drizzle-kit push                              # схема в БД (только oblako)
 psql "$DATABASE_URL" -f supabase/seeds.sql         # данные (при наличии)
-bun run build
+bun run build                                      # собирает dist/client + dist/server
 
 npm i -g pm2
-pm2 start ecosystem.config.cjs
+pm2 start ecosystem.config.cjs                     # запускает node node-server.mjs
 pm2 save && pm2 startup
 ```
+
+> Сборка кладёт SSR-бандл в `dist/server/server.js`, а корневой `node-server.mjs`
+> поднимает поверх него Node HTTP listener (TanStack Start 1.x не выдаёт
+> standalone-сервер сам по себе — `.output/server/index.mjs` это устаревший
+> vinxi-формат и его больше не существует).
 
 ## 3b. Деплой через Docker
 
