@@ -2,9 +2,22 @@
 // Лавэйбл-пресет включает в себя tanstackStart/react/tailwind/tsConfigPaths.
 // Отключаем cloudflare-плагин и указываем tanstack target = "node-server".
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import { fileURLToPath } from "node:url";
+
+const zodV4Alias = fileURLToPath(new URL("./src/lib/zod-v4.ts", import.meta.url));
 
 export default defineConfig({
   cloudflare: false,
+  vite: {
+    resolve: {
+      alias: [
+        // Better Auth 1.6.x uses Zod v4-only .meta(); keep the server bundle
+        // from accidentally resolving bare "zod" to a nested v3/mini entrypoint.
+        { find: /^zod$/, replacement: zodV4Alias },
+      ],
+      dedupe: ["zod"],
+    },
+  },
   tanstackStart: {
     target: "node-server",
   },
