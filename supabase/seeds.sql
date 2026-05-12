@@ -26,7 +26,29 @@ INSERT INTO oblako.products (id, slug, name_ru, name_en, tagline_ru, tagline_en,
 INSERT INTO oblako.products (id, slug, name_ru, name_en, tagline_ru, tagline_en, description_ru, description_en, price, stock, category_id, images) VALUES ('p_hand_cream', 'soft-hand-cream', 'Мягкий крем для рук', 'Soft Hand Cream', 'Ежедневный комфорт', 'Everyday comfort', 'Нежирный крем с глицерином и аллантоином. Быстро впитывается, защищает и смягчает кожу рук.', 'Non-greasy cream with glycerin and allantoin. Absorbs quickly, protects and softens hands.', 1290, 95, 'body', ARRAY['https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&fm=webp&w=800&q=70','https://images.unsplash.com/photo-1556228852-80b6e5eeff06?auto=format&fit=crop&fm=webp&w=800&q=70']::text[]) ON CONFLICT (id) DO NOTHING;
 
 -- Banners
-INSERT INTO oblako.banners (id, title, subtitle, image, cta_label, cta_href, text_color, enabled, sort_order) VALUES ('bn_hero', 'Облако ухода для вашей кожи', 'Чистые формулы, нежные текстуры, заметный результат', 'https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?auto=format&fit=crop&w=1600&q=80', 'Смотреть каталог', '/catalog', 'light'::banner_text_color, true, 1) ON CONFLICT (id) DO NOTHING;
+INSERT INTO oblako.banners (
+  id,
+  title,
+  subtitle,
+  image,
+  cta_label,
+  cta_href,
+  text_color,
+  enabled,
+  sort_order
+)
+VALUES (
+  'bn_hero',
+  'Облако ухода для вашей кожи',
+  'Чистые формулы, нежные текстуры, заметный результат',
+  'https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?auto=format&fit=crop&w=1600&q=80',
+  'Смотреть каталог',
+  '/catalog',
+  'light'::oblako.banner_text_color,  -- вот тут добавить oblako.
+  true,
+  1
+)
+ON CONFLICT (id) DO NOTHING;
 
 -- Posts
 INSERT INTO oblako.posts (slug, title, excerpt, cover, category, body, images) VALUES ('sample-article', 'Заголовок статьи — замените на свой', 'Краткое описание статьи в одну-две строки. Появляется в карточке журнала и в превью при шеринге.', 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=1400&q=80', 'Ритуалы', ARRAY['Это первый абзац типовой статьи. Здесь можно рассказать вступление: о чём текст, для кого он и какую пользу даст читателю. Замените содержимое через админку — раздел «Журнал».','Второй абзац — основная мысль. Каждый пустой перевод строки в админке создаёт новый абзац. Текст автоматически верстается в комфортной для чтения колонке.','Третий абзац — детали, примеры, советы. Под текстом можно добавить фотогалерею и встроенное видео — поля для них есть в форме редактирования статьи.','Заключение. Подведите итог и пригласите читателя к действию: попробовать продукт, прочитать ещё одну статью, оставить комментарий.']::text[], ARRAY['https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=1400&q=80','https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?auto=format&fit=crop&w=1400&q=80']::text[]) ON CONFLICT (slug) DO NOTHING;

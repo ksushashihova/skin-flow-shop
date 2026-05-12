@@ -51,15 +51,31 @@ export const updateMeFn = createServerFn({ method: "POST" })
 export const listProductsFn = createServerFn({ method: "GET" })
   .inputValidator((d: { query?: string; categoryId?: string }) => d)
   .handler(async ({ data }) => {
+  .handler(async ({ data }) => {
     const conds = [] as ReturnType<typeof eq>[];
+
     if (data.categoryId) conds.push(eq(products.categoryId, data.categoryId));
     if (data.query?.trim()) {
       const q = `%${data.query.trim()}%`;
-      conds.push(or(ilike(products.nameRu, q), ilike(products.nameEn, q), ilike(products.taglineRu, q), ilike(products.taglineEn, q))!);
+      conds.push(
+        or(
+          ilike(products.nameRu, q),
+          ilike(products.nameEn, q),
+          ilike(products.taglineRu, q),
+          ilike(products.taglineEn, q),
+        )!,
+      );
     }
-    const rows = await db.select().from(products)
+
+    console.log("[listProductsFn] input:", data);
+
+    const rows = await db
+      .select()
+      .from(products)
       .where(conds.length ? and(...conds) : undefined)
       .orderBy(desc(products.createdAt));
+
+    console.log("[listProductsFn] rows count:", rows.length);
     return rows.map((r) => ({
       id: r.id, slug: r.slug,
       name_ru: r.nameRu, name_en: r.nameEn,
