@@ -53,22 +53,51 @@ export const listProductsFn = createServerFn({ method: "GET" })
   .inputValidator((d: { query?: string; categoryId?: string }) => d)
   .handler(async ({ data }) => {
     const conds = [] as ReturnType<typeof eq>[];
+
     if (data.categoryId) conds.push(eq(products.categoryId, data.categoryId));
     if (data.query?.trim()) {
       const q = `%${data.query.trim()}%`;
-      conds.push(or(ilike(products.nameRu, q), ilike(products.nameEn, q), ilike(products.taglineRu, q), ilike(products.taglineEn, q))!);
+      conds.push(
+        or(
+          ilike(products.nameRu, q),
+          ilike(products.nameEn, q),
+          ilike(products.taglineRu, q),
+          ilike(products.taglineEn, q),
+        )!,
+      );
     }
-    const rows = await db.select().from(products)
-      .where(conds.length ? and(...conds) : undefined)
-      .orderBy(desc(products.createdAt));
-    return rows.map((r) => ({
-      id: r.id, slug: r.slug,
-      name_ru: r.nameRu, name_en: r.nameEn,
-      tagline_ru: r.taglineRu, tagline_en: r.taglineEn,
-      description_ru: r.descriptionRu, description_en: r.descriptionEn,
-      price: r.price, images: r.images || [], stock: r.stock, category: r.categoryId,
-      videoUrl: r.videoUrl ?? undefined, howToUse: r.howToUse ?? undefined,
-    }));
+
+    console.log("[listProductsFn] input:", data);
+
+    try {
+      const rows = await db
+        .select()
+        .from(products)
+        .where(conds.length ? and(...conds) : undefined)
+        .orderBy(desc(products.createdAt));
+
+      console.log("[listProductsFn] rows count:", rows.length);
+
+      return rows.map((r) => ({
+        id: r.id,
+        slug: r.slug,
+        name_ru: r.nameRu,
+        name_en: r.nameEn,
+        tagline_ru: r.taglineRu,
+        tagline_en: r.taglineEn,
+        description_ru: r.descriptionRu,
+        description_en: r.descriptionEn,
+        price: r.price,
+        images: r.images || [],
+        stock: r.stock,
+        category: r.categoryId,
+        videoUrl: r.videoUrl ?? undefined,
+        howToUse: r.howToUse ?? undefined,
+      }));
+    } catch (e) {
+      console.error("[listProductsFn] ERROR:", e);
+      throw e;
+    }
   });
 
 export const getProductFn = createServerFn({ method: "GET" })
