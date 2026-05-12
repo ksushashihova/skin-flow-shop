@@ -1,5 +1,4 @@
 // All remaining data CRUD operations as server functions (Drizzle).
-console.log("SERVER DATABASE_URL:", process.env.DATABASE_URL);
 import { createServerFn } from "@tanstack/react-start";
 import { requireAuth, requireAdmin } from "./auth-middleware.server";
 import { db } from "@/db/index.server";
