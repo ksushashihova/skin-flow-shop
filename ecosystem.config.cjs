@@ -4,7 +4,7 @@ module.exports = {
   apps: [
     {
       name: "oblako",
-      script: ".output/server/index.mjs",
+      script: "node-server.mjs",
       cwd: "/var/www/oblako",
       instances: 1,
       exec_mode: "fork",

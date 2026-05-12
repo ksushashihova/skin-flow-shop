@@ -8,7 +8,7 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
-    "start": "node .output/server/index.mjs",
+    "start": "node node-server.mjs",
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
     "lint": "eslint .",
