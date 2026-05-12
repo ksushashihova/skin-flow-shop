@@ -5,13 +5,15 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
   cloudflare: false,
-  resolve: {
-    alias: [
-      // Better Auth 1.6.x uses Zod v4-only .meta(); keep the server bundle
-      // from accidentally resolving bare "zod" to a nested v3/mini entrypoint.
-      { find: /^zod$/, replacement: "/src/lib/zod-v4.ts" },
-    ],
-    dedupe: ["zod"],
+  vite: {
+    resolve: {
+      alias: [
+        // Better Auth 1.6.x uses Zod v4-only .meta(); keep the server bundle
+        // from accidentally resolving bare "zod" to a nested v3/mini entrypoint.
+        { find: /^zod$/, replacement: "/src/lib/zod-v4.ts" },
+      ],
+      dedupe: ["zod"],
+    },
   },
   tanstackStart: {
     target: "node-server",
