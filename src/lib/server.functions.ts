@@ -90,14 +90,14 @@ export const createOrderFn = createServerFn({ method: "POST" })
       return { row, totals, profile };
     });
 
-    // Письмо-подтверждение (best-effort, не валим заказ если SMTP лёг).
+    // Письмо-подтверждение (best-effort, не ждём SMTP, чтобы оформление не зависало).
     try {
       const lines = items.map((i) => `${i.name} × ${i.quantity} — ${i.price * i.quantity} ₽`).join("<br>");
-      await sendMail({
+      void sendMail({
         to: order.profile.email,
         subject: `Заказ №${order.row.id.slice(0, 8)} оформлен — ОБЛАКО`,
         html: `<h2>Спасибо за заказ!</h2><p>Сумма: <b>${order.totals.totalPrice} ₽</b></p><p>${lines}</p>${tracking ? `<p>Трек-номер: <b>${tracking}</b></p>` : ""}`,
-      });
+      }).catch((e) => console.error("[order email]", e));
     } catch (e) { console.error("[order email]", e); }
 
     return {
@@ -163,6 +163,13 @@ export const createGiftCardFn = createServerFn({ method: "POST" })
       design: data.design, recipientEmail: data.recipientEmail,
       message: data.message?.slice(0, 300) ?? null,
     }).returning();
+    try {
+      void sendMail({
+        to: row.recipientEmail,
+        subject: `Подарочный сертификат ${row.code} — ОБЛАКО`,
+        html: `<h2>Ваш подарочный сертификат ОБЛАКО</h2><p>Номинал: <b>${row.amount} ₽</b></p><p>Промокод: <b>${row.code}</b></p>${row.message ? `<p>${row.message}</p>` : ""}<p>Введите промокод при оформлении заказа.</p>`,
+      }).catch((e) => console.error("[gift card email]", e));
+    } catch (e) { console.error("[gift card email]", e); }
     return {
       code: row.code, amount: row.amount, remaining: row.remaining,
       design: row.design as "minimal"|"floral", recipientEmail: row.recipientEmail,
