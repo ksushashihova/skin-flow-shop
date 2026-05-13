@@ -13,6 +13,8 @@ function makeDb() {
   const client = postgres(url, {
     prepare: false,
     max: 10,
+    connect_timeout: Number(process.env.DB_CONNECT_TIMEOUT_SECONDS || 10),
+    idle_timeout: Number(process.env.DB_IDLE_TIMEOUT_SECONDS || 30),
     connection: { search_path: "oblako,public" },
     ssl: {
       rejectUnauthorized: false,   // <-- добавить
