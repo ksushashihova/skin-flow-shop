@@ -158,7 +158,15 @@ export const cancelOrderFn = createServerFn({ method: "POST" })
 
 /* ----------- createGiftCard ----------- */
 export const createGiftCardFn = createServerFn({ method: "POST" })
-  .inputValidator((d: { amount: number; design: "minimal"|"floral"; recipientEmail: string; message?: string }) => d)
+  .middleware([requireAuth])
+  .inputValidator((d: { amount: number; design: "minimal"|"floral"; recipientEmail: string; message?: string }) => {
+    const amount = Math.floor(Number(d?.amount) || 0);
+    if (amount < 500 || amount > 100_000) throw new Error("Номинал от 500 до 100 000 ₽");
+    const design = d?.design === "floral" ? "floral" : "minimal";
+    const recipientEmail = String(d?.recipientEmail ?? "").trim().slice(0, 255);
+    const message = d?.message ? String(d.message).slice(0, 300) : undefined;
+    return { amount, design, recipientEmail, message };
+  })
   .handler(async ({ data }) => {
     if (!data.amount || data.amount < 500) throw new Error("Минимальный номинал — 500 ₽");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.recipientEmail)) throw new Error("Некорректный email получателя");
