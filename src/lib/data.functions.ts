@@ -570,7 +570,8 @@ export const subscribeFn = createServerFn({ method: "POST" })
     } catch (e) {
       const code = (e as { code?: string }).code;
       if (code === "23505") throw new Error("Вы уже подписаны");
-      throw new Error((e as Error).message);
+      console.error("[subscribe]", e);
+      throw new Error("Не удалось оформить подписку. Попробуйте позже.");
     }
     try { await db.insert(consents).values({ email: data.email, kind: "marketing" }); } catch { /* ignore */ }
     return {
