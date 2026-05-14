@@ -21,13 +21,6 @@ function ImagesArrayUpload({
         label="Загрузить и добавить в список"
         onChange={(url) => onChange([...(value ?? []), url])}
       />
-      <textarea
-        value={(value ?? []).join("\n")}
-        onChange={(e) => onChange(e.target.value.split(/\n+/).map((s) => s.trim()).filter(Boolean))}
-        rows={3}
-        placeholder="https://..."
-        className="w-full bg-background border border-border px-3 py-3 font-mono text-xs"
-      />
       {value && value.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {value.map((src, i) => (
