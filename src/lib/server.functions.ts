@@ -20,7 +20,12 @@ const toISO = (d: Date | string | null | undefined): string | undefined =>
 
 /* ----------- checkPromo ----------- */
 export const checkPromoFn = createServerFn({ method: "POST" })
-  .inputValidator((d: { code: string; subtotal: number }) => d)
+  .middleware([requireAuth])
+  .inputValidator((d: { code: string; subtotal: number }) => {
+    const code = String(d?.code ?? "").slice(0, 64);
+    const subtotal = Math.max(0, Math.min(10_000_000, Number(d?.subtotal) || 0));
+    return { code, subtotal };
+  })
   .handler(async ({ data }) => {
     const code = (data.code || "").trim().toUpperCase();
     if (!code) throw new Error("Введите код");
