@@ -71,7 +71,7 @@ function Index() {
   />
   {/* Картинка для десктопа */}
   <img
-    src="/images/hero-desktop.webp"
+    src="/images/hero-desktopp.webp"
     alt=""
     className="absolute inset-0 w-full h-full object-cover object-[right_top] hidden md:block"
     fetchPriority="high"
