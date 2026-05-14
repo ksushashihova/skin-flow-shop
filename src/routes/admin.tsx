@@ -45,6 +45,11 @@ function ImagesArrayUpload({
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Панель администратора — ОБЛАКО" }] }),
+  beforeLoad: async () => {
+    const me = await getMeFn();
+    if (!me) throw redirect({ to: "/account" });
+    if (me.role !== "admin") throw redirect({ to: "/" });
+  },
   component: Admin,
 });
 
