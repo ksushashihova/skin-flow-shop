@@ -1435,12 +1435,6 @@ function BannerForm({
       <div>
         <label className="block text-xs uppercase tracking-widest text-muted-foreground mb-2">Изображение</label>
         <S3ImageUpload folder="banners" value={data.image} onChange={(url) => set("image", url)} />
-        <input
-          value={data.image}
-          onChange={(e) => set("image", e.target.value)}
-          placeholder="или вставьте URL вручную"
-          className="w-full bg-background border border-border px-3 py-3 mt-3 text-xs"
-        />
       </div>
       <div className="grid md:grid-cols-2 gap-4">
         <Field label="Текст кнопки" value={data.ctaLabel} onChange={(v) => set("ctaLabel", v)} />
