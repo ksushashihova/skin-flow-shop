@@ -1,8 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { api, type Order, type OrderStatus, type User, type Product, type ProductCategory, type Post, type Review, type Bundle, type GiftCard, type Subscriber, type PromoCode, type Banner } from "@/lib/api";
 import { useI18n, formatPrice } from "@/lib/i18n";
 import { S3ImageUpload } from "@/components/admin/s3-image-upload";
+import { getMeFn } from "@/lib/data.functions";
 
 // Виджет для управления массивом изображений: загрузка в S3 + ручной ввод URL
 function ImagesArrayUpload({
