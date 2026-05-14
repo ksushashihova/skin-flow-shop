@@ -21,13 +21,6 @@ function ImagesArrayUpload({
         label="Загрузить и добавить в список"
         onChange={(url) => onChange([...(value ?? []), url])}
       />
-      <textarea
-        value={(value ?? []).join("\n")}
-        onChange={(e) => onChange(e.target.value.split(/\n+/).map((s) => s.trim()).filter(Boolean))}
-        rows={3}
-        placeholder="https://..."
-        className="w-full bg-background border border-border px-3 py-3 font-mono text-xs"
-      />
       {value && value.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {value.map((src, i) => (
@@ -908,12 +901,6 @@ function PostForm({
         <div className="md:col-span-2">
           <label className="block text-xs uppercase tracking-widest text-muted-foreground mb-2">Обложка</label>
           <S3ImageUpload folder="posts" value={data.cover} onChange={(url) => set("cover", url)} />
-          <input
-            value={data.cover}
-            onChange={(e) => set("cover", e.target.value)}
-            placeholder="или вставьте URL вручную"
-            className="w-full bg-background border border-border px-3 py-3 mt-3 text-xs"
-          />
         </div>
         <div className="md:col-span-2">
           <label className="block text-xs uppercase tracking-widest text-muted-foreground mb-2">Краткое описание</label>
@@ -1086,12 +1073,6 @@ function BundleForm({ initial, title, products, onCancel, onSave }: {
         <div className="md:col-span-2">
           <label className="block text-xs uppercase tracking-widest text-muted-foreground mb-2">Обложка</label>
           <S3ImageUpload folder="bundles" value={data.cover} onChange={(url) => set("cover", url)} />
-          <input
-            value={data.cover}
-            onChange={(e) => set("cover", e.target.value)}
-            placeholder="или вставьте URL вручную"
-            className="w-full bg-background border border-border px-3 py-3 mt-3 text-xs"
-          />
         </div>
         <div className="md:col-span-2">
           <label className="block text-xs uppercase tracking-widest text-muted-foreground mb-2">Описание</label>
@@ -1454,12 +1435,6 @@ function BannerForm({
       <div>
         <label className="block text-xs uppercase tracking-widest text-muted-foreground mb-2">Изображение</label>
         <S3ImageUpload folder="banners" value={data.image} onChange={(url) => set("image", url)} />
-        <input
-          value={data.image}
-          onChange={(e) => set("image", e.target.value)}
-          placeholder="или вставьте URL вручную"
-          className="w-full bg-background border border-border px-3 py-3 mt-3 text-xs"
-        />
       </div>
       <div className="grid md:grid-cols-2 gap-4">
         <Field label="Текст кнопки" value={data.ctaLabel} onChange={(v) => set("ctaLabel", v)} />
