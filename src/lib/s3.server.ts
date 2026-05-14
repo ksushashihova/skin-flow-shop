@@ -20,7 +20,7 @@ function getS3() {
   return _s3;
 }
 
-const BUCKET = () => process.env.S3_BUCKET || "oblako";
+const BUCKET = () => process.env.S3_BUCKET || "ksushashi";
 const PUBLIC_URL = () => (process.env.S3_PUBLIC_URL || "").replace(/\/+$/, "");
 
 export function publicUrlFor(key: string) {

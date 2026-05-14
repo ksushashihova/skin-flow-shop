@@ -9,9 +9,7 @@ const NAV_LINKS = [
   { to: "/bundles" as const, key: "nav.bundles" as const },
   { to: "/gift-cards" as const, key: "nav.gift" as const },
   { to: "/about" as const, key: "nav.about" as const },
-  { to: "/journal" as const, key: "nav.journal" as const },
-  { to: "/faq" as const, key: "nav.faq" as const },
-  { to: "/quiz" as const, key: "nav.quiz" as const },
+
 ];
 
 /* ---------------------------------------------------------------- */
@@ -257,7 +255,7 @@ export function SiteHeader({ variant = "solid" }: { variant?: "solid" | "overlay
         <div className={navBarCls}>
           <div className={isOverlay ? "px-10" : "container-rhode"}>
             <div className="grid grid-cols-3 items-center h-14">
-              <nav className="flex items-center gap-8 text-sm uppercase tracking-[0.2em]">
+              <nav className="flex items-center gap-8 text-[color:var(--broun)] text-base uppercase tracking-[0.2em]">
                 {NAV_LINKS.slice(0, 5).map((l) => (
                   <Link key={l.to} to={l.to} className={linkCls} activeProps={{ className: "font-semibold" }}>
                     {t(l.key)}

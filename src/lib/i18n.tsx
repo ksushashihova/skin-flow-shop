@@ -5,7 +5,7 @@ export type Lang = "ru" | "en";
 const dict = {
   ru: {
     "nav.shop": "Магазин",
-    "nav.about": "О бренде",
+    "nav.about": "бренд",
     "nav.journal": "Журнал",
     "nav.account": "Кабинет",
     "nav.cart": "Корзина",
@@ -14,7 +14,7 @@ const dict = {
     "nav.quiz": "Подбор ухода",
     "nav.bundles": "Наборы",
     "nav.gift": "Сертификаты",
-    "hero.title": "уход, который ощущается как ритуал",
+    "hero.title": "уход, уход уход",
     "hero.subtitle": "Минималистичная формула. Глубокое увлажнение. Эффект сияющей кожи.",
     "hero.cta": "Открыть магазин",
     "section.bestsellers": "Бестселлеры",

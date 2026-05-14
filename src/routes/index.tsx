@@ -81,8 +81,8 @@ function Index() {
 
 
             <div className="absolute left-6 right-6 md:left-12 md:right-12 lg:right-auto bottom-12 md:bottom-20 md:max-w-3xl fade-up">
-              <div className="text-xs md:text-sm uppercase tracking-[0.35em] mb-5 text-[color:var(--rose-deep)] [text-shadow:0_1px_8px_rgba(245,236,223,0.9)]">
-                ОБЛАКО
+              <div className="text-xl md:text-3xl uppercase tracking-[0.35em] mb-5 text-[color:var(--rose-deep)] [text-shadow:0_1px_8px_rgba(245,236,223,0.9)]">
+                -ОБЛАКО-
               </div>
               <h1 className="font-display text-[color:var(--broun)] text-5xl md:text-7xl lg:text-8xl leading-[1.02] [text-shadow:0_2px_18px_rgba(245,236,223,0.85)]">
                 {t("hero.title")}
