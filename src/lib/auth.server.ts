@@ -17,9 +17,9 @@ export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET!,
   baseURL: process.env.BETTER_AUTH_URL,
    trustedOrigins: [
- 
-     "https://oblako.ksushashi.ru",
-  ],
+  "http://localhost:8080",
+  "https://oblako.ksushashi.ru",
+],
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: false,
